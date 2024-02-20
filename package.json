@@ -1,0 +1,25 @@
+{
+  "name": "manage-meals-api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node build/index.js"
+  },
+  "dependencies": {
+    "@fastify/elasticsearch": "^3.1.0",
+    "@fastify/env": "^4.3.0",
+    "@fastify/mongodb": "^8.0.0",
+    "@fastify/redis": "^6.1.1",
+    "fastify": "^4.26.1",
+    "fastify-plugin": "^4.5.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.2",
+    "@types/node": "^20.11.19",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}
