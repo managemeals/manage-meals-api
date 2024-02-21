@@ -13,12 +13,18 @@
     "@fastify/env": "^4.3.0",
     "@fastify/mongodb": "^8.0.0",
     "@fastify/redis": "^6.1.1",
+    "bcrypt": "^5.1.1",
     "fastify": "^4.26.1",
-    "fastify-plugin": "^4.5.1"
+    "fastify-plugin": "^4.5.1",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.9"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.2",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.19",
+    "@types/nodemailer": "^6.4.14",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
   }
