@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { Transporter } from "nodemailer";
 import { JwtPayload, SignOptions, default as jwtLib } from "jsonwebtoken";
+import { User } from "./src/types.ts";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -38,5 +39,9 @@ declare module "fastify" {
       sign: (payload: object, secret: string, opts: SignOptions) => string;
       verify: <T>(token: string, secret: string) => T & JwtPayload;
     };
+  }
+
+  interface FastifyRequest {
+    user?: User;
   }
 }

@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifySchema } from "fastify";
-import { JwtEmailPayload, User } from "../../types.js";
+import { JwtEmailPayload, User } from "../../../types.js";
 
 const auth = async (fastify: FastifyInstance, options: Object) => {
   const dbCollection = fastify.mongo.client
@@ -77,6 +77,19 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
     { schema: emailVerifyResendSchema },
     async (request: FastifyRequest<{ Body: EmailVerifyResendBody }>, reply) => {
       const { email } = request.body;
+
+      let user: User | null;
+      try {
+        user = await dbCollection.findOne<User>({ email });
+        if (!user) {
+          fastify.log.error(`User ${email} not found`);
+          reply.code(403);
+          throw new Error("Error sending verify email");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error sending verify email");
+      }
 
       const verifyToken = fastify.jwt.sign(
         { email },
