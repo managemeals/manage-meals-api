@@ -67,6 +67,12 @@ const envSchema = {
     RESET_PASS_JWT_EXPIRE_SEC: {
       type: "number",
     },
+    ITEMS_PER_PAGE: {
+      type: "number",
+    },
+    RECIPE_SCRAPER_URL: {
+      type: "string",
+    },
   },
 };
 

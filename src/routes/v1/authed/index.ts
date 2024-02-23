@@ -5,7 +5,7 @@ import { JwtEmailPayload, User } from "../../../types.js";
 import recipes from "./recipes.js";
 
 const authed = async (fastify: FastifyInstance, options: Object) => {
-  const dbCollection = fastify.mongo.client
+  const usersDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection("users");
 
@@ -33,7 +33,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
 
     let user: User | null;
     try {
-      user = await dbCollection.findOne<User>({ email: jwtPayload.email });
+      user = await usersDbCollection.findOne<User>({ email: jwtPayload.email });
       if (!user) {
         fastify.log.error(`User ${jwtPayload.email} not found`);
         reply.code(401);

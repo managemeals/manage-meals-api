@@ -70,7 +70,14 @@ services:
       - redis
     ports:
       - 8002:8000
+    networks:
+      - mm-app
 
 volumes:
   mongo-data:
   elasticsearch-data:
+
+networks:
+  mm-app:
+    external:
+      name: mm_infra_network

@@ -32,3 +32,7 @@ def scrape_route():
     except Exception as e2:
       app.logger.error(str(e2))
       return (getattr(e2, 'message', str(e2)), 500)
+
+@app.route("/health", methods=["GET"])
+def health_route():
+  return "Healthy"

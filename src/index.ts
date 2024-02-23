@@ -6,6 +6,7 @@ import v1 from "./routes/v1/index.js";
 import mailer from "./plugins/mailer.js";
 import bcrypt from "./plugins/bcrypt.js";
 import jwt from "./plugins/jwt.js";
+import slugify from "./plugins/slugify.js";
 
 const fastify = Fastify({
   logger: true,
@@ -17,6 +18,7 @@ await fastify.register(redis);
 await fastify.register(mailer);
 await fastify.register(bcrypt);
 await fastify.register(jwt);
+await fastify.register(slugify);
 await fastify.register(v1, { prefix: "/v1" });
 
 const start = async () => {

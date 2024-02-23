@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifySchema } from "fastify";
 import { JwtEmailPayload, User } from "../../../types.js";
 
 const auth = async (fastify: FastifyInstance, options: Object) => {
-  const dbCollection = fastify.mongo.client
+  const usersDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection("users");
 
@@ -39,7 +39,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       }
 
       try {
-        await dbCollection.updateOne(
+        await usersDbCollection.updateOne(
           {
             email: jwtPayload.email,
           },
@@ -80,7 +80,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
 
       let user: User | null;
       try {
-        user = await dbCollection.findOne<User>({ email });
+        user = await usersDbCollection.findOne<User>({ email });
         if (!user) {
           fastify.log.error(`User ${email} not found`);
           reply.code(403);
@@ -137,7 +137,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
 
       let user: User | null;
       try {
-        user = await dbCollection.findOne<User>({ email });
+        user = await usersDbCollection.findOne<User>({ email });
         if (!user) {
           fastify.log.error(`User ${email} not found`);
           reply.code(403);
@@ -205,7 +205,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
 
       let user: User | null;
       try {
-        user = await dbCollection.findOne<User>({ email });
+        user = await usersDbCollection.findOne<User>({ email });
         if (!user) {
           fastify.log.error(`User ${email} not found`);
           reply.code(403);
@@ -294,7 +294,9 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
 
       let user: User | null;
       try {
-        user = await dbCollection.findOne<User>({ email: jwtPayload.email });
+        user = await usersDbCollection.findOne<User>({
+          email: jwtPayload.email,
+        });
         if (!user) {
           fastify.log.error(`User ${jwtPayload.email} not found`);
           reply.code(403);
@@ -355,7 +357,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       const hash = await fastify.bcrypt.hash(password);
 
       try {
-        await dbCollection.insertOne({
+        await usersDbCollection.insertOne({
           uuid: crypto.randomUUID(),
           name,
           email,
@@ -432,7 +434,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       const hash = await fastify.bcrypt.hash(password);
 
       try {
-        await dbCollection.updateOne(
+        await usersDbCollection.updateOne(
           {
             email: jwtPayload.email,
           },

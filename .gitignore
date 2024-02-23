@@ -3,4 +3,7 @@ node_modules
 .env
 .env.*
 !.env.example
+!.env.*.example
 build
+docker-compose.override.yaml
+docker-compose.*.override.yaml

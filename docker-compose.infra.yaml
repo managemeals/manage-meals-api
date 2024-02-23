@@ -1,0 +1,71 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    env_file:
+      - ./.env.infra
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - mm-infra
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    env_file:
+      - ./.env.infra
+    depends_on:
+      - mongo
+    networks:
+      - mm-infra
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    networks:
+      - mm-infra
+
+  recipe-scraper-01:
+    build:
+      context: .
+      dockerfile: scraper.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./.env.infra
+    depends_on:
+      - redis
+    networks:
+      - mm-infra
+
+  recipe-scraper-02:
+    build:
+      context: .
+      dockerfile: scraper.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./.env.infra
+    depends_on:
+      - redis
+    networks:
+      - mm-infra
+
+  recipe-scraper-lb:
+    image: haproxy:2.9
+    sysctls:
+      - net.ipv4.ip_unprivileged_port_start=0
+    depends_on:
+      - recipe-scraper-01
+      - recipe-scraper-02
+    volumes:
+      - ./haproxy-recipe-scraper.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    networks:
+      - mm-infra
+
+volumes:
+  mongo-data:
+
+networks:
+  mm-infra:
+    name: mm_infra_network
+    driver: bridge

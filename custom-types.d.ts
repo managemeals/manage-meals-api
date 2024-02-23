@@ -26,6 +26,8 @@ declare module "fastify" {
       AUTH_REFRESH_TOKEN_EXPIRE_SEC: number;
       RESET_PASS_JWT_SECRET: string;
       RESET_PASS_JWT_EXPIRE_SEC: number;
+      ITEMS_PER_PAGE: number;
+      RECIPE_SCRAPER_URL: string;
     };
 
     mailer: Transporter;
@@ -39,6 +41,8 @@ declare module "fastify" {
       sign: (payload: object, secret: string, opts: SignOptions) => string;
       verify: <T>(token: string, secret: string) => T & JwtPayload;
     };
+
+    slugify: (string: string, options?: Options) => string;
   }
 
   interface FastifyRequest {
