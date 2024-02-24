@@ -9,7 +9,6 @@ declare module "fastify" {
       MONGO_URL: string;
       MONGO_DB: string;
       REDIS_URL: string;
-      ES_HOST: string;
       PASSWORD_MIN_LENGTH: number;
       SMTP_HOST: string;
       SMTP_USER: string;
@@ -28,6 +27,7 @@ declare module "fastify" {
       RESET_PASS_JWT_EXPIRE_SEC: number;
       ITEMS_PER_PAGE: number;
       RECIPE_SCRAPER_URL: string;
+      INFRA_ENDPOINT_KEY: string;
     };
 
     mailer: Transporter;

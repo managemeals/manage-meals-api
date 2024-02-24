@@ -4,7 +4,7 @@ import fastifyPlugin from "fastify-plugin";
 
 const envSchema = {
   type: "object",
-  required: ["MONGO_URL", "MONGO_DB", "REDIS_URL", "ES_HOST"],
+  required: ["MONGO_URL", "MONGO_DB", "REDIS_URL"],
   properties: {
     MONGO_URL: {
       type: "string",
@@ -13,9 +13,6 @@ const envSchema = {
       type: "string",
     },
     REDIS_URL: {
-      type: "string",
-    },
-    ES_HOST: {
       type: "string",
     },
     PASSWORD_MIN_LENGTH: {
@@ -73,13 +70,19 @@ const envSchema = {
     RECIPE_SCRAPER_URL: {
       type: "string",
     },
+    INFRA_ENDPOINT_KEY: {
+      type: "string",
+    },
   },
 };
 
 const envOptions = {
   confKey: "config",
   schema: envSchema,
-  dotenv: true,
+  dotenv: {
+    path: process.env.APP_ENV === "production" ? ".env" : ".env.local",
+    debug: process.env.APP_ENV !== "production",
+  },
 };
 
 const env = async (fastify: FastifyInstance, options: Object) => {

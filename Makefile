@@ -2,48 +2,80 @@
 default:
 	echo default
 
-# infra
+# infra only
 .PHONY: build-infra
 build-infra:
-	docker compose -f docker-compose.infra.yaml -f docker-compose.infra.override.yaml build
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.infra.override.yaml \
+	build
 
 .PHONY: up-infra
 up-infra:
-	docker compose -f docker-compose.infra.yaml -f docker-compose.infra.override.yaml up
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.infra.override.yaml \
+	up
 
-.PHONY: down-infra
-down-infra:
-	docker compose -f docker-compose.infra.yaml -f docker-compose.infra.override.yaml down
+.PHONY: stop-infra
+stop-infra:
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.infra.override.yaml \
+	stop
 
 .PHONY: clean-infra
 clean-infra:
-	docker compose -f docker-compose.infra.yaml -f docker-compose.infra.override.yaml down -v
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.infra.override.yaml \
+	down -v
 
 .PHONY: restart-infra
-restart-infra: down-infra build-infra up-infra
+restart-infra: stop-infra build-infra up-infra
 
 .PHONY: recreate-infra
 recreate-infra: clean-infra build-infra up-infra
 
-# app
+# everything
 .PHONY: build-app
 build-app:
-	docker compose -f docker-compose.app.yaml build
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	build
 
 .PHONY: up-app
 up-app:
-	docker compose -f docker-compose.app.yaml up
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	up
 
-.PHONY: down-app
-down-app:
-	docker compose -f docker-compose.app.yaml down
+.PHONY: stop-app
+stop-app:
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	stop
 
 .PHONY: clean-app
 clean-app:
-	docker compose -f docker-compose.app.yaml down -v
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	down -v
 
 .PHONY: restart-app
-restart-app: down-app build-app up-app
+restart-app: stop-app build-app up-app
 
 .PHONY: recreate-app
 recreate-app: clean-app build-app up-app

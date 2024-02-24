@@ -17,6 +17,8 @@ app = Flask(__name__)
 app.config.from_mapping(config)
 cache = Cache(app)
 
+shutdown = False
+
 @app.route("/", methods=["GET"])
 @cache.cached(timeout=30, query_string=True)
 def scrape_route():
@@ -35,4 +37,18 @@ def scrape_route():
 
 @app.route("/health", methods=["GET"])
 def health_route():
+  if shutdown:
+    return "Shutdown", 503
   return "Healthy"
+
+@app.route("/shutdown", methods=["GET"])
+def shutdown_route():
+  global shutdown
+  shutdown = True
+  return "Shutdown"
+
+@app.route("/startup", methods=["GET"])
+def startup_route():
+  global shutdown
+  shutdown = False
+  return "Startup"

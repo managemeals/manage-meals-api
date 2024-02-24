@@ -3,7 +3,7 @@ services:
     image: mongo:7
     restart: unless-stopped
     env_file:
-      - ./.env.infra
+      - ./.env.docker
     volumes:
       - mongo-data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
@@ -14,7 +14,7 @@ services:
     image: mongo-express
     restart: unless-stopped
     env_file:
-      - ./.env.infra
+      - ./.env.docker
     depends_on:
       - mongo
     networks:
@@ -32,7 +32,7 @@ services:
       dockerfile: scraper.Dockerfile
     restart: unless-stopped
     env_file:
-      - ./.env.infra
+      - ./.env.docker
     depends_on:
       - redis
     networks:
@@ -44,7 +44,7 @@ services:
       dockerfile: scraper.Dockerfile
     restart: unless-stopped
     env_file:
-      - ./.env.infra
+      - ./.env.docker
     depends_on:
       - redis
     networks:
@@ -52,6 +52,7 @@ services:
 
   recipe-scraper-lb:
     image: haproxy:2.9
+    restart: unless-stopped
     sysctls:
       - net.ipv4.ip_unprivileged_port_start=0
     depends_on:
@@ -62,8 +63,19 @@ services:
     networks:
       - mm-infra
 
+  typesense:
+    image: typesense/typesense:0.25.2
+    restart: unless-stopped
+    volumes:
+      - typesense-data:/data
+    env_file:
+      - ./.env.docker
+    networks:
+      - mm-infra
+
 volumes:
   mongo-data:
+  typesense-data:
 
 networks:
   mm-infra:
