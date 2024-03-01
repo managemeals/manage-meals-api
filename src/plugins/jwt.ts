@@ -20,7 +20,7 @@ const fastifyJwt = fastifyPlugin(
 export { fastifyJwt };
 
 const jwt = async (fastify: FastifyInstance, options: Object) => {
-  fastify.register(fastifyJwt);
+  await fastify.register(fastifyJwt);
 };
 
 export default fastifyPlugin(jwt);

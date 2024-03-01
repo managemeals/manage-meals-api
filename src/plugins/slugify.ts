@@ -11,7 +11,7 @@ const fastifySlugify = fastifyPlugin(
 export { fastifySlugify };
 
 const slugify = async (fastify: FastifyInstance, options: Object) => {
-  fastify.register(fastifySlugify);
+  await fastify.register(fastifySlugify);
 };
 
 export default fastifyPlugin(slugify);

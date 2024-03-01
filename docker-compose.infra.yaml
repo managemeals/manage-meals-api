@@ -73,6 +73,34 @@ services:
     networks:
       - mm-infra
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    env_file:
+      - ./.env.docker
+    networks:
+      - mm-infra
+
+  queue-consumer:
+    build:
+      context: .
+      dockerfile: consumer.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./.env.docker
+    depends_on:
+      - rabbitmq
+    networks:
+      - mm-infra
+
+  dozzle:
+    image: amir20/dozzle:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mm-infra
+
 volumes:
   mongo-data:
   typesense-data:

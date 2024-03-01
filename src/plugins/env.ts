@@ -73,6 +73,33 @@ const envSchema = {
     INFRA_ENDPOINT_KEY: {
       type: "string",
     },
+    S3_KEY: {
+      type: "string",
+    },
+    S3_SECRET: {
+      type: "string",
+    },
+    S3_ENDPOINT: {
+      type: "string",
+    },
+    S3_REGION: {
+      type: "string",
+    },
+    S3_BUCKET: {
+      type: "string",
+    },
+    RABBITMQ_URL: {
+      type: "string",
+    },
+    TYPESENSE_HOST: {
+      type: "string",
+    },
+    TYPESENSE_PORT: {
+      type: "number",
+    },
+    TYPESENSE_API_KEY: {
+      type: "string",
+    },
   },
 };
 
@@ -86,7 +113,7 @@ const envOptions = {
 };
 
 const env = async (fastify: FastifyInstance, options: Object) => {
-  fastify.register(fastifyEnv, envOptions);
+  await fastify.register(fastifyEnv, envOptions);
 };
 
 export default fastifyPlugin(env);

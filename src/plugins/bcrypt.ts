@@ -23,7 +23,7 @@ const fastifyBcrypt = fastifyPlugin(
 export { fastifyBcrypt };
 
 const bcrypt = async (fastify: FastifyInstance, options: Object) => {
-  fastify.register(fastifyBcrypt, {
+  await fastify.register(fastifyBcrypt, {
     saltRounds: fastify.config.BCRYPT_SALT_ROUNDS,
   });
 };

@@ -18,7 +18,7 @@ const fastifyMailer = fastifyPlugin(
 export { fastifyMailer };
 
 const mailer = async (fastify: FastifyInstance, options: Object) => {
-  fastify.register(fastifyMailer, {
+  await fastify.register(fastifyMailer, {
     pool: true,
     host: fastify.config.SMTP_HOST,
     port: fastify.config.SMTP_PORT,

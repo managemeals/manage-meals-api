@@ -3,7 +3,7 @@ import { FastifyInstance } from "fastify";
 import fastifyPlugin from "fastify-plugin";
 
 const redis = async (fastify: FastifyInstance, options: Object) => {
-  fastify.register(fastifyRedis, {
+  await fastify.register(fastifyRedis, {
     url: fastify.config.REDIS_URL,
   });
 };

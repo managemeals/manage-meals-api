@@ -1,7 +1,11 @@
 import Fastify from "fastify";
 import { Transporter } from "nodemailer";
 import { JwtPayload, SignOptions, default as jwtLib } from "jsonwebtoken";
-import { User } from "./src/types.ts";
+import { IDbUser } from "./src/types.ts";
+import { S3Client } from "@aws-sdk/client-s3";
+import amqplib from "amqplib";
+import { Client as TypesenseClient } from "typesense";
+import { Faker } from "@faker-js/faker";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -28,6 +32,15 @@ declare module "fastify" {
       ITEMS_PER_PAGE: number;
       RECIPE_SCRAPER_URL: string;
       INFRA_ENDPOINT_KEY: string;
+      S3_KEY: string;
+      S3_SECRET: string;
+      S3_ENDPOINT: string;
+      S3_REGION: string;
+      S3_BUCKET: string;
+      RABBITMQ_URL: string;
+      TYPESENSE_HOST: string;
+      TYPESENSE_PORT: number;
+      TYPESENSE_API_KEY: string;
     };
 
     mailer: Transporter;
@@ -43,9 +56,20 @@ declare module "fastify" {
     };
 
     slugify: (string: string, options?: Options) => string;
+
+    s3: S3Client;
+
+    amqp: {
+      connection: amqplib.Connection;
+      channel: amqplib.Channel;
+    };
+
+    typesense: TypesenseClient;
+
+    faker: Faker;
   }
 
   interface FastifyRequest {
-    user?: User;
+    user?: IDbUser;
   }
 }

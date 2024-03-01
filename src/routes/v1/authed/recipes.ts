@@ -1,54 +1,172 @@
-import { FastifyInstance, FastifyRequest, FastifySchema } from "fastify";
+import { FastifyInstance, FastifyRequest } from "fastify";
+import { nanoid } from "nanoid";
+import {
+  ICategoriesTags,
+  IRecipe,
+  IRecipeData,
+  IRecipeFilter,
+  ISlug,
+  IUrl,
+  TCategoriesTags,
+  TPaginated,
+  TRecipe,
+  TRecipeFilter,
+  TRecipes,
+  TSlug,
+  TUrl,
+} from "../../../types.js";
 
 const recipes = async (fastify: FastifyInstance, options: Object) => {
   const recipesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection("recipes");
 
-  const recipesSchema: FastifySchema = {};
-
   fastify.get(
     "/",
-    { schema: recipesSchema },
-    async (request: FastifyRequest<{ Body: any }>, reply) => {
-      return { user: request.user || { ok: "nice" } };
-    }
-  );
-
-  const postImportRecipeSchema: FastifySchema = {
-    querystring: {
-      type: "object",
-      required: ["url"],
-      properties: {
-        url: { type: "string", format: "uri" },
+    {
+      schema: {
+        querystring: TRecipeFilter,
+        response: { 200: TPaginated(TRecipes) },
       },
     },
-  };
+    async (request: FastifyRequest<{ Querystring: IRecipeFilter }>, reply) => {
+      const { page, categories, tags, sort } = request.query;
+      let skipPage = page ? page - 1 : 0;
+      if (skipPage < 0) {
+        skipPage = 0;
+      }
 
-  interface IPostImportRecipeQuerystring {
-    url: string;
-  }
+      const matchObj: any = {
+        createdByUuid: request.user?.uuid,
+      };
+
+      if (tags && tags.length && tags[0] !== "") {
+        matchObj["tagUuids"] = {
+          $all: tags,
+        };
+      }
+
+      if (categories && categories.length && categories[0] !== "") {
+        matchObj["categoryUuids"] = {
+          $all: categories,
+        };
+      }
+
+      let sortObj: any = {
+        slug: 1,
+      };
+
+      if (sort) {
+        switch (sort) {
+          case "createdAt":
+            sortObj = {
+              createdAt: 1,
+            };
+            break;
+          case "-createdAt":
+            sortObj = {
+              createdAt: -1,
+            };
+            break;
+        }
+      }
+
+      const recipesPipeline = [
+        {
+          $match: matchObj,
+        },
+        {
+          $sort: sortObj,
+        },
+        {
+          $skip: skipPage * fastify.config.ITEMS_PER_PAGE,
+        },
+        {
+          $limit: fastify.config.ITEMS_PER_PAGE,
+        },
+        {
+          $lookup: {
+            from: "tags",
+            localField: "tagUuids",
+            foreignField: "uuid",
+            as: "tags",
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "categoryUuids",
+            foreignField: "uuid",
+            as: "categories",
+          },
+        },
+      ];
+
+      let recipes: IRecipe[] = [];
+      const recipesCursor = recipesDbCollection.aggregate(recipesPipeline);
+      try {
+        for await (const doc of recipesCursor) {
+          recipes.push(doc as IRecipe);
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error gettings recipes");
+      }
+
+      const totalPipeline = [
+        {
+          $match: matchObj,
+        },
+        {
+          $count: "count",
+        },
+      ];
+      let total = 0;
+      const totalCursor = recipesDbCollection.aggregate(totalPipeline);
+      try {
+        for await (const doc of totalCursor) {
+          total = doc.count;
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting recipes total");
+      }
+
+      return {
+        page: page || 1,
+        total,
+        data: recipes,
+      };
+    },
+  );
 
   fastify.post(
     "/import",
-    { schema: postImportRecipeSchema },
+    {
+      schema: {
+        querystring: TUrl,
+        body: TCategoriesTags,
+        response: { 200: TSlug },
+      },
+    },
     async (
       request: FastifyRequest<{
-        Body: any;
-        Querystring: IPostImportRecipeQuerystring;
+        Body: ICategoriesTags;
+        Querystring: IUrl;
       }>,
-      reply
+      reply,
     ) => {
       const { url } = request.query;
+      const { tagUuids, categoryUuids } = request.body;
 
       fastify.log.info(`Importing recipe URL: ${url}`);
 
-      let recipeJson: any;
+      let recipeJson: IRecipeData;
       try {
         const scraperRes = await fetch(
-          `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`
+          `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`,
         );
-        recipeJson = await scraperRes.json();
+        recipeJson = (await scraperRes.json()) as IRecipeData;
       } catch (e) {
         fastify.log.error(e);
         reply.code(400);
@@ -68,12 +186,16 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error importing recipe, invalid JSON");
       }
 
+      const recipeUuid = crypto.randomUUID();
+      const recipeSlug = `${fastify.slugify(recipeJson.title || "")}-${nanoid(8)}`;
       try {
         await recipesDbCollection.insertOne({
-          uuid: crypto.randomUUID(),
-          slug: fastify.slugify(recipeJson.title),
+          uuid: recipeUuid,
+          slug: recipeSlug,
           createdByUuid: request.user?.uuid,
           createdAt: new Date(),
+          categoryUuids: categoryUuids || [],
+          tagUuids: tagUuids || [],
           data: recipeJson,
         });
       } catch (e) {
@@ -81,8 +203,135 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error importing recipe");
       }
 
+      if (recipeJson.image) {
+        fastify.amqp.channel.sendToQueue(
+          "recipe_image",
+          Buffer.from(
+            JSON.stringify({
+              uuid: recipeUuid,
+              image: recipeJson.image,
+            }),
+          ),
+        );
+      }
+
+      return { slug: recipeSlug };
+    },
+  );
+
+  fastify.get(
+    "/:slug",
+    { schema: { params: TSlug, response: { 200: TRecipe } } },
+    async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      const { slug } = request.params;
+
+      const pipeline = [
+        {
+          $match: {
+            slug,
+            createdByUuid: request.user?.uuid,
+          },
+        },
+        {
+          $lookup: {
+            from: "tags",
+            localField: "tagUuids",
+            foreignField: "uuid",
+            as: "tags",
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "categoryUuids",
+            foreignField: "uuid",
+            as: "categories",
+          },
+        },
+      ];
+
+      let recipes: IRecipe[] = [];
+      const cursor = recipesDbCollection.aggregate(pipeline);
+      try {
+        for await (const doc of cursor) {
+          recipes.push(doc as IRecipe);
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting recipe");
+      }
+
+      if (!recipes.length) {
+        fastify.log.error(`Recipe ${slug} not found`);
+        reply.code(404);
+        throw new Error("Error getting recipe");
+      }
+
+      return recipes[0];
+    },
+  );
+
+  fastify.delete(
+    "/:slug",
+    { schema: { params: TSlug } },
+    async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      const { slug } = request.params;
+
+      try {
+        const dbRes = await recipesDbCollection.deleteOne({
+          slug,
+          createdByUuid: request.user?.uuid,
+        });
+        if (!dbRes.deletedCount) {
+          fastify.log.error(`Recipe ${slug} not deleted, maybe not found`);
+          reply.code(404);
+          throw new Error("Error deleting recipe");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting recipe");
+      }
+
       return {};
-    }
+    },
+  );
+
+  fastify.put(
+    "/:slug",
+    { schema: { params: TSlug, body: TRecipe } },
+    async (
+      request: FastifyRequest<{ Params: ISlug; Body: IRecipe }>,
+      reply,
+    ) => {
+      const { slug } = request.params;
+      const { categoryUuids, tagUuids, data } = request.body;
+
+      try {
+        const dbRes = await recipesDbCollection.updateOne(
+          {
+            slug,
+            createdByUuid: request.user?.uuid,
+          },
+          {
+            $set: {
+              categoryUuids,
+              tagUuids,
+              data,
+            },
+          },
+        );
+        if (!dbRes.matchedCount) {
+          fastify.log.error(`Recipe ${slug} not found`);
+          reply.code(404);
+          throw new Error("Error patching recipe");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error patching recipe");
+      }
+
+      return {};
+    },
   );
 };
 

@@ -1,36 +1,37 @@
-import { FastifyInstance, FastifyRequest, FastifySchema } from "fastify";
-import { JwtEmailPayload, User } from "../../../types.js";
+import { FastifyInstance, FastifyRequest } from "fastify";
+import {
+  IEmail,
+  IEmailPass,
+  IDbUser,
+  IJwtEmailPayload,
+  IJwtUUIDPayload,
+  IToken,
+  ITokenPass,
+  TAccessRefresh,
+  TEmail,
+  TEmailPass,
+  TToken,
+  TTokenPass,
+  TRegister,
+  IRegister,
+} from "../../../types.js";
 
 const auth = async (fastify: FastifyInstance, options: Object) => {
   const usersDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection("users");
 
-  const emailVerifySchema: FastifySchema = {
-    body: {
-      type: "object",
-      required: ["token"],
-      properties: {
-        token: { type: "string" },
-      },
-    },
-  };
-
-  interface EmailVerifyBody {
-    token: string;
-  }
-
   fastify.post(
     "/email-verify",
-    { schema: emailVerifySchema },
-    async (request: FastifyRequest<{ Body: EmailVerifyBody }>, reply) => {
+    { schema: { body: TToken } },
+    async (request: FastifyRequest<{ Body: IToken }>, reply) => {
       const { token } = request.body;
 
-      let jwtPayload: JwtEmailPayload;
+      let jwtPayload: IJwtEmailPayload;
       try {
-        jwtPayload = fastify.jwt.verify<JwtEmailPayload>(
+        jwtPayload = fastify.jwt.verify<IJwtEmailPayload>(
           token,
-          fastify.config.EMAIL_VERIFY_JWT_SECRET
+          fastify.config.EMAIL_VERIFY_JWT_SECRET,
         );
       } catch (e) {
         fastify.log.error(e);
@@ -47,7 +48,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
             $set: {
               emailVerified: true,
             },
-          }
+          },
         );
       } catch (e) {
         fastify.log.error(e);
@@ -55,32 +56,18 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
-  );
-
-  const emailVerifyResendSchema: FastifySchema = {
-    body: {
-      type: "object",
-      required: ["email"],
-      properties: {
-        email: { type: "string", format: "email" },
-      },
     },
-  };
-
-  interface EmailVerifyResendBody {
-    email: string;
-  }
+  );
 
   fastify.post(
     "/email-verify-resend",
-    { schema: emailVerifyResendSchema },
-    async (request: FastifyRequest<{ Body: EmailVerifyResendBody }>, reply) => {
+    { schema: { body: TEmail } },
+    async (request: FastifyRequest<{ Body: IEmail }>, reply) => {
       const { email } = request.body;
 
-      let user: User | null;
+      let user: IDbUser | null;
       try {
-        user = await usersDbCollection.findOne<User>({ email });
+        user = await usersDbCollection.findOne<IDbUser>({ email });
         if (!user) {
           fastify.log.error(`User ${email} not found`);
           reply.code(403);
@@ -94,50 +81,35 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       const verifyToken = fastify.jwt.sign(
         { email },
         fastify.config.EMAIL_VERIFY_JWT_SECRET,
-        { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC }
+        { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC },
       );
 
       const appUrl = fastify.config.APP_URL;
-
-      try {
-        await fastify.mailer.sendMail({
-          to: email,
-          from: fastify.config.SMTP_DEFAULT_FROM,
-          subject: "Verify email",
-          html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
-        });
-      } catch (e) {
-        fastify.log.error(e);
-        throw new Error("Error sending verify email");
-      }
+      fastify.amqp.channel.sendToQueue(
+        "email",
+        Buffer.from(
+          JSON.stringify({
+            to: email,
+            from: fastify.config.SMTP_DEFAULT_FROM,
+            subject: "Verify email",
+            html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
+          }),
+        ),
+      );
 
       return {};
-    }
-  );
-
-  const forgotPasswordSchema: FastifySchema = {
-    body: {
-      type: "object",
-      required: ["email"],
-      properties: {
-        email: { type: "string", format: "email" },
-      },
     },
-  };
-
-  interface ForgotPasswordBody {
-    email: string;
-  }
+  );
 
   fastify.post(
     "/forgot-password",
-    { schema: forgotPasswordSchema },
-    async (request: FastifyRequest<{ Body: ForgotPasswordBody }>, reply) => {
+    { schema: { body: TEmail } },
+    async (request: FastifyRequest<{ Body: IEmail }>, reply) => {
       const { email } = request.body;
 
-      let user: User | null;
+      let user: IDbUser | null;
       try {
-        user = await usersDbCollection.findOne<User>({ email });
+        user = await usersDbCollection.findOne<IDbUser>({ email });
         if (!user) {
           fastify.log.error(`User ${email} not found`);
           reply.code(403);
@@ -151,61 +123,35 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       const resetToken = fastify.jwt.sign(
         { email: user.email },
         fastify.config.RESET_PASS_JWT_SECRET,
-        { expiresIn: fastify.config.RESET_PASS_JWT_EXPIRE_SEC }
+        { expiresIn: fastify.config.RESET_PASS_JWT_EXPIRE_SEC },
       );
 
       const appUrl = fastify.config.APP_URL;
-
-      try {
-        await fastify.mailer.sendMail({
-          to: email,
-          from: fastify.config.SMTP_DEFAULT_FROM,
-          subject: "Reset password",
-          html: `Hi, please <a href="${appUrl}/auth/reset-password?token=${resetToken}">click here</a> to reset your password.<br/><br/>Or visit this link: <a href="${appUrl}/auth/reset-password?token=${resetToken}">${appUrl}/auth/reset-password?token=${resetToken}</a><br/><br/>Best,<br/>ManageMeals`,
-        });
-      } catch (e) {
-        fastify.log.error(e);
-        throw new Error("Error resetting password");
-      }
+      fastify.amqp.channel.sendToQueue(
+        "email",
+        Buffer.from(
+          JSON.stringify({
+            to: email,
+            from: fastify.config.SMTP_DEFAULT_FROM,
+            subject: "Reset password",
+            html: `Hi, please <a href="${appUrl}/auth/reset-password?token=${resetToken}">click here</a> to reset your password.<br/><br/>Or visit this link: <a href="${appUrl}/auth/reset-password?token=${resetToken}">${appUrl}/auth/reset-password?token=${resetToken}</a><br/><br/>Best,<br/>ManageMeals`,
+          }),
+        ),
+      );
 
       return {};
-    }
+    },
   );
-
-  const loginSchema: FastifySchema = {
-    body: {
-      type: "object",
-      required: ["email", "password"],
-      properties: {
-        email: { type: "string", format: "email" },
-        password: { type: "string" },
-      },
-    },
-    response: {
-      200: {
-        type: "object",
-        properties: {
-          accessToken: { type: "string" },
-          refreshToken: { type: "string" },
-        },
-      },
-    },
-  };
-
-  interface LoginBody {
-    email: string;
-    password: string;
-  }
 
   fastify.post(
     "/login",
-    { schema: loginSchema },
-    async (request: FastifyRequest<{ Body: LoginBody }>, reply) => {
+    { schema: { body: TEmailPass, response: { 200: TAccessRefresh } } },
+    async (request: FastifyRequest<{ Body: IEmailPass }>, reply) => {
       const { email, password } = request.body;
 
-      let user: User | null;
+      let user: IDbUser | null;
       try {
-        user = await usersDbCollection.findOne<User>({ email });
+        user = await usersDbCollection.findOne<IDbUser>({ email });
         if (!user) {
           fastify.log.error(`User ${email} not found`);
           reply.code(403);
@@ -223,68 +169,46 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
           reply.code(403);
           throw new Error("Error logging in");
         }
-        if (!user.emailVerified) {
-          fastify.log.error(`Email ${email} not verified`);
-          reply.code(403);
-          throw new Error("Email not verified");
-        }
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error logging in");
       }
 
+      if (!user.emailVerified) {
+        fastify.log.error(`Email ${email} not verified`);
+        reply.code(403);
+        throw new Error("Email not verified");
+      }
+
       const accessToken = fastify.jwt.sign(
-        { email },
+        { uuid: user.uuid },
         fastify.config.ACCESS_JWT_SECRET,
-        { expiresIn: fastify.config.AUTH_ACCESS_TOKEN_EXPIRE_SEC }
+        { expiresIn: fastify.config.AUTH_ACCESS_TOKEN_EXPIRE_SEC },
       );
       const refreshToken = fastify.jwt.sign(
-        { email },
+        { uuid: user.uuid },
         fastify.config.REFRESH_JWT_SECRET,
-        { expiresIn: fastify.config.AUTH_REFRESH_TOKEN_EXPIRE_SEC }
+        { expiresIn: fastify.config.AUTH_REFRESH_TOKEN_EXPIRE_SEC },
       );
 
       return {
         accessToken,
         refreshToken,
       };
-    }
+    },
   );
-
-  const refreshTokenSchema: FastifySchema = {
-    body: {
-      type: "object",
-      required: ["token"],
-      properties: {
-        token: { type: "string" },
-      },
-    },
-    response: {
-      200: {
-        type: "object",
-        properties: {
-          accessToken: { type: "string" },
-          refreshToken: { type: "string" },
-        },
-      },
-    },
-  };
-
-  interface RefreshTokenBody {
-    token: string;
-  }
 
   fastify.post(
     "/refresh-token",
-    { schema: refreshTokenSchema },
-    async (request: FastifyRequest<{ Body: RefreshTokenBody }>, reply) => {
+    { schema: { body: TToken, response: { 200: TAccessRefresh } } },
+    async (request: FastifyRequest<{ Body: IToken }>, reply) => {
       const { token } = request.body;
 
-      let jwtPayload: JwtEmailPayload;
+      let jwtPayload: IJwtUUIDPayload;
       try {
-        jwtPayload = fastify.jwt.verify<JwtEmailPayload>(
+        jwtPayload = fastify.jwt.verify<IJwtUUIDPayload>(
           token,
-          fastify.config.REFRESH_JWT_SECRET
+          fastify.config.REFRESH_JWT_SECRET,
         );
       } catch (e) {
         fastify.log.error(e);
@@ -292,13 +216,13 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error refreshing token");
       }
 
-      let user: User | null;
+      let user: IDbUser | null;
       try {
-        user = await usersDbCollection.findOne<User>({
-          email: jwtPayload.email,
+        user = await usersDbCollection.findOne<IDbUser>({
+          uuid: jwtPayload.uuid,
         });
         if (!user) {
-          fastify.log.error(`User ${jwtPayload.email} not found`);
+          fastify.log.error(`User ${jwtPayload.uuid} not found`);
           reply.code(403);
           throw new Error("Error refreshing token");
         }
@@ -307,51 +231,35 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error refreshing token");
       }
 
-      // TODO: Check if user is banned
+      // Check if user is banned etc.
+      if (!user.emailVerified) {
+        fastify.log.error(`Email ${user.email} not verified`);
+        reply.code(403);
+        throw new Error("Email not verified");
+      }
 
       const accessToken = fastify.jwt.sign(
-        { email: jwtPayload.email },
+        { uuid: jwtPayload.uuid },
         fastify.config.ACCESS_JWT_SECRET,
-        { expiresIn: fastify.config.AUTH_ACCESS_TOKEN_EXPIRE_SEC }
+        { expiresIn: fastify.config.AUTH_ACCESS_TOKEN_EXPIRE_SEC },
       );
       const refreshToken = fastify.jwt.sign(
-        { email: jwtPayload.email },
+        { uuid: jwtPayload.uuid },
         fastify.config.REFRESH_JWT_SECRET,
-        { expiresIn: fastify.config.AUTH_REFRESH_TOKEN_EXPIRE_SEC }
+        { expiresIn: fastify.config.AUTH_REFRESH_TOKEN_EXPIRE_SEC },
       );
 
       return {
         accessToken,
         refreshToken,
       };
-    }
-  );
-
-  const registerSchema: FastifySchema = {
-    body: {
-      type: "object",
-      required: ["name", "email", "password"],
-      properties: {
-        name: { type: "string" },
-        email: { type: "string", format: "email" },
-        password: {
-          type: "string",
-          minLength: fastify.config.PASSWORD_MIN_LENGTH,
-        },
-      },
     },
-  };
-
-  interface RegisterBody {
-    name: string;
-    email: string;
-    password: string;
-  }
+  );
 
   fastify.post(
     "/register",
-    { schema: registerSchema },
-    async (request: FastifyRequest<{ Body: RegisterBody }>, reply) => {
+    { schema: { body: TRegister } },
+    async (request: FastifyRequest<{ Body: IRegister }>, reply) => {
       const { name, email, password } = request.body;
 
       const hash = await fastify.bcrypt.hash(password);
@@ -364,6 +272,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
           password: hash,
           createdAt: new Date(),
           emailVerified: false,
+          isAdmin: false,
         });
       } catch (e) {
         fastify.log.error(e);
@@ -373,57 +282,38 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       const verifyToken = fastify.jwt.sign(
         { email },
         fastify.config.EMAIL_VERIFY_JWT_SECRET,
-        { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC }
+        { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC },
       );
 
       const appUrl = fastify.config.APP_URL;
 
-      try {
-        await fastify.mailer.sendMail({
-          to: email,
-          from: fastify.config.SMTP_DEFAULT_FROM,
-          subject: "Verify email",
-          html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
-        });
-      } catch (e) {
-        fastify.log.error(e);
-        throw new Error("Error registering");
-      }
+      fastify.amqp.channel.sendToQueue(
+        "email",
+        Buffer.from(
+          JSON.stringify({
+            to: email,
+            from: fastify.config.SMTP_DEFAULT_FROM,
+            subject: "Verify email",
+            html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
+          }),
+        ),
+      );
 
       return {};
-    }
-  );
-
-  const resetPasswordSchema: FastifySchema = {
-    body: {
-      type: "object",
-      required: ["token", "password"],
-      properties: {
-        token: { type: "string" },
-        password: {
-          type: "string",
-          minLength: fastify.config.PASSWORD_MIN_LENGTH,
-        },
-      },
     },
-  };
-
-  interface ResetPasswordBody {
-    token: string;
-    password: string;
-  }
+  );
 
   fastify.post(
     "/reset-password",
-    { schema: resetPasswordSchema },
-    async (request: FastifyRequest<{ Body: ResetPasswordBody }>, reply) => {
+    { schema: { body: TTokenPass } },
+    async (request: FastifyRequest<{ Body: ITokenPass }>, reply) => {
       const { token, password } = request.body;
 
-      let jwtPayload: JwtEmailPayload;
+      let jwtPayload: IJwtEmailPayload;
       try {
-        jwtPayload = fastify.jwt.verify<JwtEmailPayload>(
+        jwtPayload = fastify.jwt.verify<IJwtEmailPayload>(
           token,
-          fastify.config.RESET_PASS_JWT_SECRET
+          fastify.config.RESET_PASS_JWT_SECRET,
         );
       } catch (e) {
         fastify.log.error(e);
@@ -442,7 +332,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
             $set: {
               password: hash,
             },
-          }
+          },
         );
       } catch (e) {
         fastify.log.error(e);
@@ -450,7 +340,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 };
 
