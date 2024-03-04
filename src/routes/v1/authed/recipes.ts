@@ -21,6 +21,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
     .db(fastify.config.MONGO_DB)
     .collection("recipes");
 
+  const deletesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection("deletes");
+
   fastify.get(
     "/",
     {
@@ -194,8 +198,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
           slug: recipeSlug,
           createdByUuid: request.user?.uuid,
           createdAt: new Date(),
+          updatedAt: new Date(),
           categoryUuids: categoryUuids || [],
           tagUuids: tagUuids || [],
+          rating: 0,
           data: recipeJson,
         });
       } catch (e) {
@@ -277,16 +283,38 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
       const { slug } = request.params;
 
+      let recipe: IRecipe | null;
       try {
-        const dbRes = await recipesDbCollection.deleteOne({
+        recipe = await recipesDbCollection.findOne<IRecipe>({
           slug,
           createdByUuid: request.user?.uuid,
         });
-        if (!dbRes.deletedCount) {
-          fastify.log.error(`Recipe ${slug} not deleted, maybe not found`);
+        if (!recipe) {
+          fastify.log.error(`Recipe ${slug} not found`);
           reply.code(404);
           throw new Error("Error deleting recipe");
         }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting recipe");
+      }
+
+      try {
+        await recipesDbCollection.deleteOne({
+          slug,
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting recipe");
+      }
+
+      try {
+        await deletesDbCollection.insertOne({
+          collection: "recipes",
+          uuid: recipe.uuid,
+          deletedAt: new Date(),
+        });
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error deleting recipe");
@@ -304,7 +332,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       reply,
     ) => {
       const { slug } = request.params;
-      const { categoryUuids, tagUuids, data } = request.body;
+      const { categoryUuids, tagUuids, rating, data } = request.body;
 
       try {
         const dbRes = await recipesDbCollection.updateOne(
@@ -314,8 +342,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
           },
           {
             $set: {
+              updatedAt: new Date(),
               categoryUuids,
               tagUuids,
+              rating,
               data,
             },
           },

@@ -38,6 +38,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         email: faker.internet.email(),
         password: hash,
         createdAt: faker.date.anytime(),
+        updatedAt: faker.date.anytime(),
         emailVerified: true,
         isAdmin: false,
         isMock: true,
@@ -104,6 +105,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         createdAt: faker.date.anytime().toString(),
         categoryUuids: sampleSize(categories, 3).map((c) => c.uuid || ""),
         tagUuids: sampleSize(tags, 6).map((t) => t.uuid || ""),
+        rating: 0,
         data: {
           author: faker.person.fullName(),
           canonical_url: faker.internet.url(),

@@ -90,14 +90,21 @@ services:
       - ./.env.docker
     depends_on:
       - rabbitmq
+      - mongo
+      - typesense
     networks:
       - mm-infra
 
-  dozzle:
-    image: amir20/dozzle:latest
+  search-sync:
+    build:
+      context: .
+      dockerfile: search-sync.Dockerfile
     restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./.env.docker
+    depends_on:
+      - mongo
+      - typesense
     networks:
       - mm-infra
 

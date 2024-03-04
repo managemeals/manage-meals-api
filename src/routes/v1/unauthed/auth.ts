@@ -46,6 +46,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
           },
           {
             $set: {
+              updatedAt: new Date(),
               emailVerified: true,
             },
           },
@@ -271,6 +272,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
           email,
           password: hash,
           createdAt: new Date(),
+          updatedAt: new Date(),
           emailVerified: false,
           isAdmin: false,
         });
@@ -330,6 +332,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
           },
           {
             $set: {
+              updatedAt: new Date(),
               password: hash,
             },
           },

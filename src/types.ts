@@ -11,6 +11,7 @@ export interface IJwtEmailPayload {
 export interface IDbUser {
   uuid: string;
   createdAt: Date;
+  updatedAt: Date;
   name: string;
   email: string;
   emailVerified: boolean;
@@ -84,6 +85,8 @@ export type IToken = Static<typeof TToken>;
 export const TCategory = Type.Object({
   uuid: Type.Optional(Type.String()),
   slug: Type.Optional(Type.String()),
+  createdAt: Type.Optional(Type.String({ format: "date-time" })),
+  updatedAt: Type.Optional(Type.String({ format: "date-time" })),
   name: Type.String(),
   createdByUuid: Type.Optional(Type.String()),
 });
@@ -95,6 +98,8 @@ export type ICategory = Static<typeof TCategory>;
 export const TTag = Type.Object({
   uuid: Type.Optional(Type.String()),
   slug: Type.Optional(Type.String()),
+  createdAt: Type.Optional(Type.String({ format: "date-time" })),
+  updatedAt: Type.Optional(Type.String({ format: "date-time" })),
   name: Type.String(),
   createdByUuid: Type.Optional(Type.String()),
 });
@@ -189,10 +194,12 @@ export const TRecipe = Type.Object({
   slug: Type.Optional(Type.String()),
   createdByUuid: Type.Optional(Type.String()),
   createdAt: Type.Optional(Type.String({ format: "date-time" })),
+  updatedAt: Type.Optional(Type.String({ format: "date-time" })),
   categoryUuids: Type.Optional(Type.Array(Type.String())),
   tagUuids: Type.Optional(Type.Array(Type.String())),
   categories: Type.Optional(Type.Array(TCategory)),
   tags: Type.Optional(Type.Array(TTag)),
+  rating: Type.Optional(Type.Number()),
   data: Type.Optional(TRecipeData),
 });
 

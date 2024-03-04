@@ -50,7 +50,9 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error patching user");
       }
 
-      const setObj: any = {};
+      const setObj: any = {
+        updatedAt: new Date(),
+      };
 
       if (name) {
         setObj["name"] = name;

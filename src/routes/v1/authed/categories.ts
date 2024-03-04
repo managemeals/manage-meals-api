@@ -12,6 +12,10 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
     .db(fastify.config.MONGO_DB)
     .collection("categories");
 
+  const deletesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection("deletes");
+
   fastify.get(
     "/",
     { schema: { response: { 200: TCategories } } },
@@ -46,6 +50,8 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
           slug: fastify.slugify(name),
           name,
           createdByUuid: request.user?.uuid,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
       } catch (e: unknown) {
         if (
@@ -112,6 +118,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
           {
             $set: {
               name,
+              updatedAt: new Date(),
             },
           },
         );
@@ -135,16 +142,38 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
       const { slug } = request.params;
 
+      let category: ICategory | null;
       try {
-        const dbRes = await categoriesDbCollection.deleteOne({
+        category = await categoriesDbCollection.findOne<ICategory>({
           slug,
           createdByUuid: request.user?.uuid,
         });
-        if (!dbRes.deletedCount) {
-          fastify.log.error(`Category ${slug} not deleted, maybe not found`);
+        if (!category) {
+          fastify.log.error(`Category ${slug} not found`);
           reply.code(404);
           throw new Error("Error deleting category");
         }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting category");
+      }
+
+      try {
+        await categoriesDbCollection.deleteOne({
+          slug,
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting category");
+      }
+
+      try {
+        await deletesDbCollection.insertOne({
+          collection: "categories",
+          uuid: category.uuid,
+          deletedAt: new Date(),
+        });
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error deleting category");

@@ -1,0 +1,11 @@
+FROM node:20
+
+WORKDIR /app/search
+
+COPY ["./search/package.json", "./search/package-lock.json*", "./"]
+
+RUN npm install
+
+COPY search /app/search
+
+CMD ["node", "sync.js"]

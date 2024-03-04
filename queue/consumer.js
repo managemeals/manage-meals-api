@@ -4,6 +4,7 @@ import { MongoClient } from "mongodb";
 import axios from "axios";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import mime from "mime";
+// import Typesense from "typesense";
 
 // AMQP setup
 const connection = await amqplib.connect(process.env.RABBITMQ_URL);
@@ -36,31 +37,48 @@ const s3Client = new S3Client({
   },
 });
 
-// Run queues
+// Typesense setup
+// const typesenseClient = new Typesense.Client({
+//   nodes: [
+//     {
+//       host: process.env.TYPESENSE_HOST,
+//       port: process.env.TYPESENSE_PORT,
+//       protocol: "http",
+//     },
+//   ],
+//   apiKey: process.env.TYPESENSE_API_KEY,
+//   connectionTimeoutSeconds: 5,
+// });
+
+// Email queue
 await channel.assertQueue("email");
 channel.consume("email", (msg) => {
   if (!msg) {
     console.log("No msg in email queue");
     return;
   }
+  let msgObj = {};
   try {
-    const msgObj = JSON.parse(msg.content.toString());
+    msgObj = JSON.parse(msg.content.toString());
     transporter.sendMail(msgObj);
-    channel.ack(msg);
-    console.log(`Email sent to ${msgObj.to || "N/A"}`);
   } catch (e) {
     console.log(e);
+    return;
   }
+  channel.ack(msg);
+  console.log(`Email sent to ${msgObj.to || "N/A"}`);
 });
 
+// Recipe image queue
 await channel.assertQueue("recipe_image");
 channel.consume("recipe_image", async (msg) => {
   if (!msg) {
     console.log("No msg in recipe_image queue");
     return;
   }
+  let msgObj = {};
   try {
-    const msgObj = JSON.parse(msg.content.toString());
+    msgObj = JSON.parse(msg.content.toString());
     const dbRecipe = await db
       .collection("recipes")
       .findOne({ uuid: msgObj.uuid });
@@ -84,20 +102,24 @@ channel.consume("recipe_image", async (msg) => {
         Key: filename,
         Body: imgRes.data,
         ContentType: contentType,
-      })
+      }),
     );
     const imgUrl = `https://whatacdn.fra1.cdn.digitaloceanspaces.com/${filename}`;
     await db.collection("recipes").updateOne(
       { uuid: msgObj.uuid },
       {
         $set: {
+          updatedAt: new Date(),
           "data.image": imgUrl,
         },
-      }
+      },
     );
-    channel.ack(msg);
-    console.log(`Image saved to recipe ${msgObj.uuid}`);
   } catch (e) {
     console.log(e);
+    return;
   }
+  channel.ack(msg);
+  console.log(`Image saved to recipe ${msgObj.uuid}`);
 });
+
+console.log("Queue consumer is running!");

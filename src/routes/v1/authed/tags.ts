@@ -6,6 +6,10 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
     .db(fastify.config.MONGO_DB)
     .collection("tags");
 
+  const deletesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection("deletes");
+
   fastify.get(
     "/",
     { schema: { response: { 200: TTags } } },
@@ -19,7 +23,6 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
       let tags = [];
       try {
         tags = await cursor.toArray();
-        console.log(tags);
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error gettings tags");
@@ -45,6 +48,8 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
           slug: fastify.slugify(name),
           name,
           createdByUuid: request.user?.uuid,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
       } catch (e: unknown) {
         if (
@@ -111,6 +116,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
           {
             $set: {
               name,
+              updatedAt: new Date(),
             },
           },
         );
@@ -134,16 +140,38 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
       const { slug } = request.params;
 
+      let tag: ITag | null;
       try {
-        const dbRes = await tagsDbCollection.deleteOne({
+        tag = await tagsDbCollection.findOne<ITag>({
           slug,
           createdByUuid: request.user?.uuid,
         });
-        if (!dbRes.deletedCount) {
-          fastify.log.error(`Tag ${slug} not deleted, maybe not found`);
+        if (!tag) {
+          fastify.log.error(`Tag ${slug} not found`);
           reply.code(404);
           throw new Error("Error deleting tag");
         }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting tag");
+      }
+
+      try {
+        await tagsDbCollection.deleteOne({
+          slug,
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting tag");
+      }
+
+      try {
+        await deletesDbCollection.insertOne({
+          collection: "tags",
+          uuid: tag.uuid,
+          deletedAt: new Date(),
+        });
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error deleting tag");
