@@ -8,7 +8,7 @@ const fastifyTypesense = fastifyPlugin(
     const client = new Typesense.Client(options);
 
     fastify.decorate("typesense", client);
-  },
+  }
 );
 
 export { fastifyTypesense };
@@ -23,7 +23,7 @@ const typesense = async (fastify: FastifyInstance, options: Object) => {
       },
     ],
     apiKey: fastify.config.TYPESENSE_API_KEY,
-    connectionTimeoutSeconds: 5,
+    connectionTimeoutSeconds: 10,
   });
 };
 

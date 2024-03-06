@@ -41,6 +41,7 @@ declare module "fastify" {
       TYPESENSE_HOST: string;
       TYPESENSE_PORT: number;
       TYPESENSE_API_KEY: string;
+      MOCK_INSTANCE: string;
     };
 
     mailer: Transporter;

@@ -5,6 +5,7 @@ import recipes from "./recipes.js";
 import settings from "./settings.js";
 import { IDbUser, IJwtUUIDPayload } from "../../../types.js";
 import admin from "./admin/index.js";
+import search from "./search.js";
 
 const authed = async (fastify: FastifyInstance, options: Object) => {
   const usersDbCollection = fastify.mongo.client
@@ -27,7 +28,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
     try {
       jwtPayload = fastify.jwt.verify<IJwtUUIDPayload>(
         token,
-        fastify.config.ACCESS_JWT_SECRET,
+        fastify.config.ACCESS_JWT_SECRET
       );
     } catch (e) {
       fastify.log.error(e);
@@ -37,7 +38,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
 
     let user: IDbUser | null;
     const cacheUser = await fastify.redis.get(
-      `${CACHE_PREFIX}${jwtPayload.uuid}`,
+      `${CACHE_PREFIX}${jwtPayload.uuid}`
     );
     if (cacheUser) {
       user = JSON.parse(cacheUser) as IDbUser;
@@ -60,7 +61,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
           `${CACHE_PREFIX}${jwtPayload.uuid}`,
           JSON.stringify(user),
           "EX",
-          30,
+          30
         );
       } catch (e) {
         fastify.log.error(e);
@@ -75,6 +76,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(tags, { prefix: "/tags" });
   await fastify.register(categories, { prefix: "/categories" });
   await fastify.register(recipes, { prefix: "/recipes" });
+  await fastify.register(search, { prefix: "/search" });
 };
 
 export default authed;

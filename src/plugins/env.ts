@@ -100,6 +100,9 @@ const envSchema = {
     TYPESENSE_API_KEY: {
       type: "string",
     },
+    MOCK_INSTANCE: {
+      type: "string",
+    },
   },
 };
 

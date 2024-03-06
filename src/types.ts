@@ -120,6 +120,15 @@ export const TPage = Type.Object({
 
 export type IPage = Static<typeof TPage>;
 
+export const TSearch = Type.Object({
+  q: Type.String(), // query
+  c: Type.String(), // collection
+  p: Type.Number(), // page
+  f: Type.Optional(Type.String()), // filter
+});
+
+export type ISearch = Static<typeof TSearch>;
+
 export const TRecipeFilter = Type.Object({
   page: Type.Optional(Type.Number()),
   sort: Type.Optional(Type.String()),

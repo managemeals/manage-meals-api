@@ -105,7 +105,6 @@ cron.schedule("* * * * *", async () => {
         { name: "createdByUuid", type: "string" },
         { name: "rating", type: "int32" },
         { name: "title", type: "string" },
-        { name: "ingredients", type: "string[]", facet: true },
         { name: "categories", type: "string[]", facet: true },
         { name: "tags", type: "string[]", facet: true },
       ],
