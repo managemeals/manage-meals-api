@@ -40,7 +40,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       name: "Alice",
       email: "alice@example.com",
       password: hash,
-      createdAt: faker.date.past(),
+      createdAt: faker.date.past({ years: 3 }),
       updatedAt: new Date(),
       emailVerified: true,
       isAdmin: false,
@@ -76,7 +76,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         uuid: crypto.randomUUID(),
         slug: fastify.slugify(mockTags[i]),
         // @ts-expect-error JS date in db
-        createdAt: faker.date.past(),
+        createdAt: faker.date.past({ years: 3 }),
         // @ts-expect-error JS date in db
         updatedAt: new Date(),
         name: mockTags[i],
@@ -108,7 +108,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         uuid: crypto.randomUUID(),
         slug: fastify.slugify(mockCategories[i]),
         // @ts-expect-error JS date in db
-        createdAt: faker.date.past(),
+        createdAt: faker.date.past({ years: 3 }),
         // @ts-expect-error JS date in db
         updatedAt: new Date(),
         name: mockCategories[i],
@@ -147,7 +147,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         slug: `${fastify.slugify(currRecipe.title)}-${nanoid(6)}`,
         createdByUuid: sample(users)?.uuid || "",
         // @ts-expect-error JS date in db
-        createdAt: faker.date.past(),
+        createdAt: faker.date.past({ years: 3 }),
         // @ts-expect-error JS date in db
         updatedAt: new Date(),
         categoryUuids: sampleSize(categories, random(1, 4)).map(
@@ -163,7 +163,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
           cuisine: faker.location.country(),
           description: faker.lorem.paragraphs(),
           host: "bbcgoodfood",
-          image: faker.image.urlPicsumPhotos(),
+          image: faker.image.urlPicsumPhotos({ width: 1000, height: 1000 }),
           ingredient_groups: [
             {
               ingredients: recipeingredients,

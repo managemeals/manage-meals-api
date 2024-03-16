@@ -103,6 +103,15 @@ const envSchema = {
     MOCK_INSTANCE: {
       type: "string",
     },
+    MOCK_ALLOWED_IPS: {
+      type: "string",
+    },
+    MOCK_ALLOWED_URLS: {
+      type: "string",
+    },
+    HELP_CONTACT_EMAIL: {
+      type: "string",
+    },
   },
 };
 

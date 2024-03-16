@@ -44,16 +44,28 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         createdByUuid: request.user?.uuid,
       };
 
-      if (tags && tags.length && tags[0] !== "") {
-        matchObj["tagUuids"] = {
-          $all: tags,
-        };
+      if (tags && tags.length) {
+        if (tags[0] !== "") {
+          matchObj["tagUuids"] = {
+            $size: 0,
+          };
+        } else if (tags[0] !== "") {
+          matchObj["tagUuids"] = {
+            $all: tags,
+          };
+        }
       }
 
-      if (categories && categories.length && categories[0] !== "") {
-        matchObj["categoryUuids"] = {
-          $all: categories,
-        };
+      if (categories && categories.length) {
+        if (categories[0] === "[]") {
+          matchObj["categoryUuids"] = {
+            $size: 0,
+          };
+        } else if (categories[0] !== "") {
+          matchObj["categoryUuids"] = {
+            $all: categories,
+          };
+        }
       }
 
       let sortObj: any = {
@@ -139,9 +151,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       return {
         page: page || 1,
         total,
+        perPage: fastify.config.ITEMS_PER_PAGE,
         data: recipes,
       };
-    },
+    }
   );
 
   fastify.post(
@@ -158,7 +171,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         Body: ICategoriesTags;
         Querystring: IUrl;
       }>,
-      reply,
+      reply
     ) => {
       const { url } = request.query;
       const { tagUuids, categoryUuids } = request.body;
@@ -168,7 +181,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       let recipeJson: IRecipeData;
       try {
         const scraperRes = await fetch(
-          `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`,
+          `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`
         );
         recipeJson = (await scraperRes.json()) as IRecipeData;
       } catch (e) {
@@ -191,7 +204,9 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       const recipeUuid = crypto.randomUUID();
-      const recipeSlug = `${fastify.slugify(recipeJson.title || "")}-${nanoid(8)}`;
+      const recipeSlug = `${fastify.slugify(recipeJson.title || "")}-${nanoid(
+        8
+      )}`;
       try {
         await recipesDbCollection.insertOne({
           uuid: recipeUuid,
@@ -216,13 +231,13 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
             JSON.stringify({
               uuid: recipeUuid,
               image: recipeJson.image,
-            }),
-          ),
+            })
+          )
         );
       }
 
       return { slug: recipeSlug };
-    },
+    }
   );
 
   fastify.get(
@@ -274,7 +289,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return recipes[0];
-    },
+    }
   );
 
   fastify.delete(
@@ -321,7 +336,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    },
+    }
   );
 
   fastify.put(
@@ -329,7 +344,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
     { schema: { params: TSlug, body: TRecipe } },
     async (
       request: FastifyRequest<{ Params: ISlug; Body: IRecipe }>,
-      reply,
+      reply
     ) => {
       const { slug } = request.params;
       const { categoryUuids, tagUuids, rating, data } = request.body;
@@ -348,7 +363,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
               rating,
               data,
             },
-          },
+          }
         );
         if (!dbRes.matchedCount) {
           fastify.log.error(`Recipe ${slug} not found`);
@@ -361,7 +376,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    },
+    }
   );
 };
 

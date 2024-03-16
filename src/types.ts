@@ -220,5 +220,13 @@ export const TPaginated = <T extends TSchema>(T: T) =>
   Type.Object({
     page: Type.Number(),
     total: Type.Number(),
+    perPage: Type.Number(),
     data: T,
   });
+
+export const TContact = Type.Object({
+  subject: Type.String(),
+  message: Type.String(),
+});
+
+export type IContact = Static<typeof TContact>;

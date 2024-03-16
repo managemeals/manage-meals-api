@@ -12,7 +12,13 @@ import typesense from "./plugins/typesense.js";
 
 const app = async (fastify: FastifyInstance, options: Object) => {
   fastify.addHook("preHandler", async (request, reply) => {
-    if (fastify.config.MOCK_INSTANCE === "yes" && request.method !== "GET") {
+    if (
+      fastify.config.MOCK_INSTANCE === "yes" &&
+      request.method !== "GET" &&
+      (!fastify.config.MOCK_ALLOWED_IPS.split(",").includes(request.ip) ||
+        !fastify.config.MOCK_ALLOWED_URLS.split(",").includes(request.url))
+    ) {
+      console.log(request.ip);
       reply.code(403);
       throw new Error("Mock instance only allows GET requests");
     }
