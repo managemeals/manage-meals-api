@@ -37,3 +37,13 @@ Comment out the sync in the `docker-compose.infra.yaml` and run this:
 ```sh
 eval $(cat ../.env.local) node sync.js
 ```
+
+## Webhooks
+
+### Local development
+
+Comment out the handler in the `docker-compose.infra.yaml` and run this:
+
+```sh
+eval $(cat ../.env.local) node handler.js
+```

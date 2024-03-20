@@ -21,6 +21,7 @@
     "bcrypt": "^5.1.1",
     "fastify": "^4.26.1",
     "fastify-plugin": "^4.5.1",
+    "gocardless-nodejs": "^3.21.0",
     "jsonwebtoken": "^9.0.2",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.6",

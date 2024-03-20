@@ -45,6 +45,11 @@ declare module "fastify" {
       MOCK_ALLOWED_IPS: string;
       MOCK_ALLOWED_URLS: string;
       HELP_CONTACT_EMAIL: string;
+      GOCARDLESS_ACCESS_TOKEN: string;
+      GOCARDLESS_ENV: string;
+      GOCARDLESS_REDIRECT_URI: string;
+      GOCARDLESS_EXIT_URI: string;
+      GOCARDLESS_WEBHOOK_SECRET: string;
     };
 
     mailer: Transporter;
@@ -71,6 +76,8 @@ declare module "fastify" {
     typesense: TypesenseClient;
 
     faker: Faker;
+
+    gocardless: any;
   }
 
   interface FastifyRequest {

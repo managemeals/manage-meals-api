@@ -2,6 +2,8 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { nanoid } from "nanoid";
 import {
   ICategoriesTags,
+  IDbDeletes,
+  IDbRecipe,
   IRecipe,
   IRecipeData,
   IRecipeFilter,
@@ -19,11 +21,11 @@ import {
 const recipes = async (fastify: FastifyInstance, options: Object) => {
   const recipesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("recipes");
+    .collection<IDbRecipe>("recipes");
 
   const deletesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("deletes");
+    .collection<IDbDeletes>("deletes");
 
   fastify.get(
     "/",
@@ -45,7 +47,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       };
 
       if (tags && tags.length) {
-        if (tags[0] !== "") {
+        if (tags[0] === "[]") {
           matchObj["tagUuids"] = {
             $size: 0,
           };

@@ -1,0 +1,17 @@
+{
+  "name": "webhooks",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^6.5.0",
+    "node-cron": "^3.0.3"
+  }
+}

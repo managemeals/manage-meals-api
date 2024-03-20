@@ -1,14 +1,22 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { TTag, ITag, TTags, ISlug, TSlug } from "../../../types.js";
+import {
+  TTag,
+  ITag,
+  TTags,
+  ISlug,
+  TSlug,
+  IDbDeletes,
+  IDbTag,
+} from "../../../types.js";
 
 const tags = async (fastify: FastifyInstance, options: Object) => {
   const tagsDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("tags");
+    .collection<IDbTag>("tags");
 
   const deletesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("deletes");
+    .collection<IDbDeletes>("deletes");
 
   fastify.get(
     "/",
@@ -18,7 +26,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
         {
           createdByUuid: request.user?.uuid,
         },
-        { sort: { name: 1 } },
+        { sort: { name: 1 } }
       );
       let tags = [];
       try {
@@ -29,7 +37,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return tags;
-    },
+    }
   );
 
   fastify.post(
@@ -42,10 +50,11 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Body: ITag }>, reply) => {
       const { name } = request.body;
 
+      const tagSlug = fastify.slugify(name);
       try {
         await tagsDbCollection.insertOne({
           uuid: crypto.randomUUID(),
-          slug: fastify.slugify(name),
+          slug: tagSlug,
           name,
           createdByUuid: request.user?.uuid,
           createdAt: new Date(),
@@ -64,8 +73,8 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error creating tag");
       }
 
-      return {};
-    },
+      return { slug: tagSlug };
+    }
   );
 
   fastify.get(
@@ -91,7 +100,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return tag;
-    },
+    }
   );
 
   fastify.patch(
@@ -102,7 +111,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
         Body: ITag;
         Params: ISlug;
       }>,
-      reply,
+      reply
     ) => {
       const { slug } = request.params;
       const { name } = request.body;
@@ -118,7 +127,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
               name,
               updatedAt: new Date(),
             },
-          },
+          }
         );
         if (!dbRes.matchedCount) {
           fastify.log.error(`Tag ${slug} not found`);
@@ -131,7 +140,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    },
+    }
   );
 
   fastify.delete(
@@ -178,7 +187,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    },
+    }
   );
 };
 

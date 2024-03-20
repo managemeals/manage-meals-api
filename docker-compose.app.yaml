@@ -10,6 +10,7 @@ services:
       - rabbitmq
       - queue-consumer
       - search-sync
+      - webhooks-handler
     networks:
       - mm-infra
 
@@ -24,6 +25,7 @@ services:
       - rabbitmq
       - queue-consumer
       - search-sync
+      - webhooks-handler
     networks:
       - mm-infra
 

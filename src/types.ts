@@ -17,6 +17,9 @@ export interface IDbUser {
   emailVerified: boolean;
   password: string;
   isAdmin: boolean;
+  isBanned: boolean;
+  gcDdMandateId?: string;
+  gcSubscriptionId?: string;
 }
 
 export interface IDbMock {
@@ -95,6 +98,12 @@ export const TCategories = Type.Array(TCategory);
 
 export type ICategory = Static<typeof TCategory>;
 
+export interface IDbCategory
+  extends Omit<ICategory, "createdAt" | "updatedAt"> {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export const TTag = Type.Object({
   uuid: Type.Optional(Type.String()),
   slug: Type.Optional(Type.String()),
@@ -107,6 +116,11 @@ export const TTag = Type.Object({
 export const TTags = Type.Array(TTag);
 
 export type ITag = Static<typeof TTag>;
+
+export interface IDbTag extends Omit<ITag, "createdAt" | "updatedAt"> {
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export const TSlug = Type.Object({
   slug: Type.String(),
@@ -216,6 +230,11 @@ export const TRecipes = Type.Array(TRecipe);
 
 export type IRecipe = Static<typeof TRecipe>;
 
+export interface IDbRecipe extends Omit<IRecipe, "createdAt" | "updatedAt"> {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export const TPaginated = <T extends TSchema>(T: T) =>
   Type.Object({
     page: Type.Number(),
@@ -230,3 +249,41 @@ export const TContact = Type.Object({
 });
 
 export type IContact = Static<typeof TContact>;
+
+export type TGoCardlessEnvironment = "LIVE" | "SANDBOX";
+
+export interface IGoCardlessOptions {
+  accessToken: string;
+  environment: TGoCardlessEnvironment;
+}
+
+export const TUUID = Type.Object({
+  uuid: Type.String(),
+});
+
+export type IUUID = Static<typeof TUUID>;
+
+export const TAuthorisationUrl = Type.Object({
+  authorisationUrl: Type.String(),
+});
+
+export type IAuthorisationUrl = Static<typeof TAuthorisationUrl>;
+
+export interface IDbDeletes {
+  collection: string;
+  uuid: string | undefined;
+  deletedAt: Date;
+}
+
+export const TSubscriptionUpcomingPayment = Type.Object({
+  chargeDate: Type.String({ format: "date-time" }),
+  amount: Type.Number(),
+});
+
+export const TSubscriptionUpcomingPayments = Type.Array(
+  TSubscriptionUpcomingPayment
+);
+
+export type ISubscriptionUpcomingPayment = Static<
+  typeof TSubscriptionUpcomingPayment
+>;

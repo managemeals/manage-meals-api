@@ -112,6 +112,21 @@ const envSchema = {
     HELP_CONTACT_EMAIL: {
       type: "string",
     },
+    GOCARDLESS_ACCESS_TOKEN: {
+      type: "string",
+    },
+    GOCARDLESS_ENV: {
+      type: "string",
+    },
+    GOCARDLESS_REDIRECT_URI: {
+      type: "string",
+    },
+    GOCARDLESS_EXIT_URI: {
+      type: "string",
+    },
+    GOCARDLESS_WEBHOOK_SECRET: {
+      type: "string",
+    },
   },
 };
 

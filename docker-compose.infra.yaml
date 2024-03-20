@@ -108,6 +108,18 @@ services:
     networks:
       - mm-infra
 
+  webhooks-handler:
+    build:
+      context: .
+      dockerfile: webhooks-handler.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./.env.docker
+    depends_on:
+      - mongo
+    networks:
+      - mm-infra
+
 volumes:
   mongo-data:
   typesense-data:

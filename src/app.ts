@@ -9,6 +9,8 @@ import slugify from "./plugins/slugify.js";
 import infra from "./routes/infra/index.js";
 import amqp from "./plugins/amqp.js";
 import typesense from "./plugins/typesense.js";
+import gocardless from "./plugins/gocardless.js";
+import webhooks from "./routes/webhooks/index.js";
 
 const app = async (fastify: FastifyInstance, options: Object) => {
   fastify.addHook("preHandler", async (request, reply) => {
@@ -18,7 +20,7 @@ const app = async (fastify: FastifyInstance, options: Object) => {
       (!fastify.config.MOCK_ALLOWED_IPS.split(",").includes(request.ip) ||
         !fastify.config.MOCK_ALLOWED_URLS.split(",").includes(request.url))
     ) {
-      console.log(request.ip);
+      fastify.log.info(request.ip);
       reply.code(403);
       throw new Error("Mock instance only allows GET requests");
     }
@@ -34,7 +36,9 @@ const app = async (fastify: FastifyInstance, options: Object) => {
   // await fastify.register(s3);
   await fastify.register(amqp);
   await fastify.register(typesense);
+  await fastify.register(gocardless);
   await fastify.register(infra, { prefix: "/infra" });
+  await fastify.register(webhooks, { prefix: "/webhooks" });
   await fastify.register(v1, { prefix: "/v1" });
 };
 

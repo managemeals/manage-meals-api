@@ -7,11 +7,12 @@ import { IDbUser, IJwtUUIDPayload } from "../../../types.js";
 import admin from "./admin/index.js";
 import search from "./search.js";
 import help from "./help.js";
+import subscriptions from "./subscriptions.js";
 
 const authed = async (fastify: FastifyInstance, options: Object) => {
   const usersDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("users");
+    .collection<IDbUser>("users");
 
   const CACHE_PREFIX = "authed_";
 
@@ -79,6 +80,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(recipes, { prefix: "/recipes" });
   await fastify.register(search, { prefix: "/search" });
   await fastify.register(help, { prefix: "/help" });
+  await fastify.register(subscriptions, { prefix: "/subscriptions" });
 };
 
 export default authed;

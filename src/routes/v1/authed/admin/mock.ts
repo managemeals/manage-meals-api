@@ -1,9 +1,10 @@
 import { FastifyInstance } from "fastify";
 import {
-  ICategory,
+  IDbCategory,
+  IDbDeletes,
+  IDbRecipe,
+  IDbTag,
   IDbUser,
-  IRecipe,
-  ITag,
   TDbMock,
 } from "../../../../types.js";
 import { faker } from "@faker-js/faker";
@@ -13,23 +14,23 @@ import { nanoid } from "nanoid";
 const mock = async (fastify: FastifyInstance, options: Object) => {
   const tagsDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("tags");
+    .collection<IDbTag>("tags");
 
   const categoriesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("categories");
+    .collection<IDbCategory>("categories");
 
   const usersDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("users");
+    .collection<IDbUser>("users");
 
   const recipesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("recipes");
+    .collection<IDbRecipe>("recipes");
 
   const deletesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
-    .collection("deletes");
+    .collection<IDbDeletes>("deletes");
 
   fastify.post("/", async (request, reply) => {
     // Users
@@ -44,6 +45,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       updatedAt: new Date(),
       emailVerified: true,
       isAdmin: false,
+      isBanned: false,
       isMock: true,
     });
     try {
@@ -70,14 +72,12 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       "Quick",
       "Hard",
     ];
-    const tags: TDbMock<ITag>[] = [];
+    const tags: TDbMock<IDbTag>[] = [];
     for (let i = 0; i < mockTags.length; i++) {
       tags.push({
         uuid: crypto.randomUUID(),
         slug: fastify.slugify(mockTags[i]),
-        // @ts-expect-error JS date in db
         createdAt: faker.date.past({ years: 3 }),
-        // @ts-expect-error JS date in db
         updatedAt: new Date(),
         name: mockTags[i],
         createdByUuid: sample(users)?.uuid || "",
@@ -102,14 +102,12 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       "Drink",
       "Breakfast",
     ];
-    const categories: TDbMock<ICategory>[] = [];
+    const categories: TDbMock<IDbCategory>[] = [];
     for (let i = 0; i < mockCategories.length; i++) {
       categories.push({
         uuid: crypto.randomUUID(),
         slug: fastify.slugify(mockCategories[i]),
-        // @ts-expect-error JS date in db
         createdAt: faker.date.past({ years: 3 }),
-        // @ts-expect-error JS date in db
         updatedAt: new Date(),
         name: mockCategories[i],
         createdByUuid: sample(users)?.uuid || "",
@@ -129,7 +127,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       "https://whatacdn.fra1.cdn.digitaloceanspaces.com/mmeals/mocks/recipes_raw_nosource_ar.json"
     );
     const mockRecipes: any = await mockRecipesRes.json();
-    const recipes: TDbMock<IRecipe>[] = [];
+    const recipes: TDbMock<IDbRecipe>[] = [];
     let currIndex = 0;
     for (let key in mockRecipes) {
       if (currIndex >= maxRecipes) {
@@ -146,9 +144,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         uuid: crypto.randomUUID(),
         slug: `${fastify.slugify(currRecipe.title)}-${nanoid(6)}`,
         createdByUuid: sample(users)?.uuid || "",
-        // @ts-expect-error JS date in db
         createdAt: faker.date.past({ years: 3 }),
-        // @ts-expect-error JS date in db
         updatedAt: new Date(),
         categoryUuids: sampleSize(categories, random(1, 4)).map(
           (c) => c.uuid || ""
