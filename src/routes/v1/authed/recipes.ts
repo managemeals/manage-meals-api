@@ -334,7 +334,6 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         });
       } catch (e) {
         fastify.log.error(e);
-        throw new Error("Error deleting recipe");
       }
 
       return {};

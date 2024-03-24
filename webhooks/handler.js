@@ -9,8 +9,8 @@ const syncsDbColl = db.collection("syncs");
 const webhooksDbColl = db.collection("webhooks");
 const usersDbColl = db.collection("users");
 
-// Every minute
-cron.schedule("* * * * *", async () => {
+// Every 5 minutes
+cron.schedule("*/5 * * * *", async () => {
   console.log("Starting webhook handler");
 
   // Get lastSyncedAt time, default to some old date to make

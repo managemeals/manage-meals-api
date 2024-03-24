@@ -3,6 +3,7 @@ import {
   ICategory,
   IDbCategory,
   IDbDeletes,
+  IDbRecipe,
   ISlug,
   TCategories,
   TCategory,
@@ -13,6 +14,10 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
   const categoriesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection<IDbCategory>("categories");
+
+  const recipesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbRecipe>("recipes");
 
   const deletesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
@@ -26,7 +31,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
         {
           createdByUuid: request.user?.uuid,
         },
-        { sort: { name: 1 } }
+        { sort: { slug: 1 } }
       );
       let categories = [];
       try {
@@ -172,6 +177,21 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
       }
 
       try {
+        await recipesDbCollection.updateMany(
+          {
+            createdByUuid: request.user?.uuid,
+          },
+          {
+            $pull: {
+              categoryUuids: category.uuid,
+            },
+          }
+        );
+      } catch (e) {
+        fastify.log.error(e);
+      }
+
+      try {
         await deletesDbCollection.insertOne({
           collection: "categories",
           uuid: category.uuid,
@@ -179,7 +199,6 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
         });
       } catch (e) {
         fastify.log.error(e);
-        throw new Error("Error deleting category");
       }
 
       return {};

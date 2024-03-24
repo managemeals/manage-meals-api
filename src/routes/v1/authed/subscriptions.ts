@@ -45,7 +45,6 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
         subscription = await fastify.gocardless.subscriptions.find(
           request.user?.gcSubscriptionId
         );
-        console.log(subscription);
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error getting subscription");

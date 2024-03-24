@@ -38,8 +38,8 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
     const hash = await fastify.bcrypt.hash("secret");
     users.push({
       uuid: crypto.randomUUID(),
-      name: "Alice",
-      email: "alice@example.com",
+      name: "Demo",
+      email: "demo@example.com",
       password: hash,
       createdAt: faker.date.past({ years: 3 }),
       updatedAt: new Date(),
@@ -47,6 +47,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       isAdmin: false,
       isBanned: false,
       isMock: true,
+      gcSubscriptionId: "mocksubid",
     });
     try {
       await usersDbCollection.insertMany(users);
