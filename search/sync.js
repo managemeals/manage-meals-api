@@ -24,8 +24,8 @@ const typesenseClient = new Typesense.Client({
 });
 const recipesCollection = "recipes";
 
-// Every minute
-cron.schedule("* * * * *", async () => {
+// Every 3 minutes
+cron.schedule("*/3 * * * *", async () => {
   console.log("Starting search sync");
 
   // Get lastSyncedAt time, default to some old date to make

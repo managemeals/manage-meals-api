@@ -123,7 +123,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
     }
 
     // Recipes
-    const maxRecipes = 5000;
+    const maxRecipes = 1000;
     const mockRecipesRes = await fetch(
       "https://whatacdn.fra1.cdn.digitaloceanspaces.com/mmeals/mocks/recipes_raw_nosource_ar.json"
     );

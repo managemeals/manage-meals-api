@@ -42,8 +42,8 @@ services:
       - manage-meals-app-01
       - manage-meals-app-02
     command: >
-      bash -c "/opt/wait-for-it.sh -t 30 manage-meals-app-01:3000 --
-        /opt/wait-for-it.sh -t 30 manage-meals-app-02:3000 --
+      bash -c "/opt/wait-for-it.sh -t 60 manage-meals-app-01:3000 --
+        /opt/wait-for-it.sh -t 60 manage-meals-app-02:3000 --
         haproxy -f /usr/local/etc/haproxy/haproxy.cfg -W -db"
     volumes:
       - ./haproxy-manage-meals-app.cfg:/usr/local/etc/haproxy/haproxy.cfg

@@ -59,8 +59,8 @@ services:
       - recipe-scraper-01
       - recipe-scraper-02
     command: >
-      bash -c "/opt/wait-for-it.sh -t 30 recipe-scraper-01:8000 --
-        /opt/wait-for-it.sh -t 30 recipe-scraper-02:8000 --
+      bash -c "/opt/wait-for-it.sh -t 60 recipe-scraper-01:8000 --
+        /opt/wait-for-it.sh -t 60 recipe-scraper-02:8000 --
         haproxy -f /usr/local/etc/haproxy/haproxy.cfg -W -db"
     volumes:
       - ./haproxy-recipe-scraper.cfg:/usr/local/etc/haproxy/haproxy.cfg
