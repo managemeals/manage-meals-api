@@ -15,7 +15,7 @@ cron.schedule("*/5 * * * *", async () => {
 
   // Get lastSyncedAt time, default to some old date to make
   // sure it runs if there is no lastSyncedAt time
-  let lastSyncedAt = new Date("2020-01-01");
+  let lastSyncedAt = new Date("2012-01-01");
   try {
     const syncedDoc = await syncsDbColl.findOne({
       name: "Webhook",
