@@ -287,3 +287,7 @@ export const TSubscriptionUpcomingPayments = Type.Array(
 export type ISubscriptionUpcomingPayment = Static<
   typeof TSubscriptionUpcomingPayment
 >;
+
+export interface IGlobalConfig {
+  isLbShutdown: boolean;
+}

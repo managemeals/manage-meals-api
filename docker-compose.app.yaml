@@ -3,31 +3,25 @@ services:
     build: .
     restart: unless-stopped
     depends_on:
-      - mongo
       - redis
       - recipe-scraper-lb
-      - typesense
-      - rabbitmq
       - queue-consumer
       - search-sync
       - webhooks-handler
     networks:
-      - mm-infra
+      - mmeals_net
 
   manage-meals-app-02:
     build: .
     restart: unless-stopped
     depends_on:
-      - mongo
       - redis
       - recipe-scraper-lb
-      - typesense
-      - rabbitmq
       - queue-consumer
       - search-sync
       - webhooks-handler
     networks:
-      - mm-infra
+      - mmeals_net
 
   manage-meals-app-lb:
     image: haproxy:2.9
@@ -42,4 +36,4 @@ services:
     env_file:
       - ./.env.docker
     networks:
-      - mm-infra
+      - mmeals_net

@@ -11,14 +11,14 @@ import amqp from "./plugins/amqp.js";
 import typesense from "./plugins/typesense.js";
 import gocardless from "./plugins/gocardless.js";
 import webhooks from "./routes/webhooks/index.js";
+import globalconfig from "./plugins/globalconfig.js";
 
 const app = async (fastify: FastifyInstance, options: Object) => {
   fastify.addHook("preHandler", async (request, reply) => {
     if (
       fastify.config.MOCK_INSTANCE === "yes" &&
       request.method !== "GET" &&
-      (!fastify.config.MOCK_ALLOWED_IPS.split(",").includes(request.ip) ||
-        !fastify.config.MOCK_ALLOWED_URLS.split(",").includes(request.url))
+      !fastify.config.MOCK_ALLOWED_URLS.split(",").includes(request.url)
     ) {
       fastify.log.info(request.ip);
       reply.code(403);
@@ -37,6 +37,7 @@ const app = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(amqp);
   await fastify.register(typesense);
   await fastify.register(gocardless);
+  await fastify.register(globalconfig);
   await fastify.register(infra, { prefix: "/infra" });
   await fastify.register(webhooks, { prefix: "/webhooks" });
   await fastify.register(v1, { prefix: "/v1" });

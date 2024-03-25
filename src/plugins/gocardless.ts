@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import fastifyPlugin from "fastify-plugin";
-import { Environments } from "gocardless-nodejs/constants";
-import { GoCardlessClient } from "gocardless-nodejs/client";
+import { Environments } from "gocardless-nodejs/constants.js";
+import { GoCardlessClient } from "gocardless-nodejs/client.js";
 import { IGoCardlessOptions, TGoCardlessEnvironment } from "../types.js";
 
 const fastifyGocardless = fastifyPlugin(

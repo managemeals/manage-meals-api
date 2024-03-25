@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import { Transporter } from "nodemailer";
 import { JwtPayload, SignOptions, default as jwtLib } from "jsonwebtoken";
-import { IDbUser } from "./src/types.ts";
+import { IDbUser, IGlobalConfig } from "./src/types.ts";
 import { S3Client } from "@aws-sdk/client-s3";
 import amqplib from "amqplib";
 import { Client as TypesenseClient } from "typesense";
@@ -42,7 +42,6 @@ declare module "fastify" {
       TYPESENSE_PORT: number;
       TYPESENSE_API_KEY: string;
       MOCK_INSTANCE: string;
-      MOCK_ALLOWED_IPS: string;
       MOCK_ALLOWED_URLS: string;
       HELP_CONTACT_EMAIL: string;
       GOCARDLESS_ACCESS_TOKEN: string;
@@ -78,6 +77,8 @@ declare module "fastify" {
     faker: Faker;
 
     gocardless: any;
+
+    globalconfig: IGlobalConfig;
   }
 
   interface FastifyRequest {

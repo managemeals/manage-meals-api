@@ -20,6 +20,20 @@ const infra = async (fastify: FastifyInstance, options: Object) => {
   );
 
   fastify.get("/health", async (request, reply) => {
+    if (fastify.globalconfig.isLbShutdown) {
+      reply.code(503);
+      throw new Error("Shutdown");
+    }
+    return {};
+  });
+
+  fastify.get("/shutdown", async (request, reply) => {
+    fastify.globalconfig = { ...fastify.globalconfig, isLbShutdown: true };
+    return {};
+  });
+
+  fastify.get("/startup", async (request, reply) => {
+    fastify.globalconfig = { ...fastify.globalconfig, isLbShutdown: false };
     return {};
   });
 };

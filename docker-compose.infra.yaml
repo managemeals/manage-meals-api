@@ -8,7 +8,7 @@ services:
       - mongo-data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
-      - mm-infra
+      - mmeals_net
 
   mongo-express:
     image: mongo-express
@@ -18,13 +18,13 @@ services:
     depends_on:
       - mongo
     networks:
-      - mm-infra
+      - mmeals_net
 
   redis:
     image: redis:7
     restart: unless-stopped
     networks:
-      - mm-infra
+      - mmeals_net
 
   recipe-scraper-01:
     build:
@@ -36,7 +36,7 @@ services:
     depends_on:
       - redis
     networks:
-      - mm-infra
+      - mmeals_net
 
   recipe-scraper-02:
     build:
@@ -48,7 +48,7 @@ services:
     depends_on:
       - redis
     networks:
-      - mm-infra
+      - mmeals_net
 
   recipe-scraper-lb:
     image: haproxy:2.9
@@ -61,7 +61,7 @@ services:
     volumes:
       - ./haproxy-recipe-scraper.cfg:/usr/local/etc/haproxy/haproxy.cfg
     networks:
-      - mm-infra
+      - mmeals_net
 
   typesense:
     image: typesense/typesense:0.25.2
@@ -71,7 +71,7 @@ services:
     env_file:
       - ./.env.docker
     networks:
-      - mm-infra
+      - mmeals_net
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -79,7 +79,7 @@ services:
     env_file:
       - ./.env.docker
     networks:
-      - mm-infra
+      - mmeals_net
 
   queue-consumer:
     build:
@@ -93,7 +93,7 @@ services:
       - mongo
       - typesense
     networks:
-      - mm-infra
+      - mmeals_net
 
   search-sync:
     build:
@@ -106,7 +106,7 @@ services:
       - mongo
       - typesense
     networks:
-      - mm-infra
+      - mmeals_net
 
   webhooks-handler:
     build:
@@ -118,13 +118,13 @@ services:
     depends_on:
       - mongo
     networks:
-      - mm-infra
+      - mmeals_net
 
 volumes:
   mongo-data:
   typesense-data:
 
 networks:
-  mm-infra:
-    name: mm_infra_network
+  mmeals_net:
+    name: mmeals_net
     driver: bridge
