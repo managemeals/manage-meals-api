@@ -56,6 +56,15 @@ up-app:
 	-f docker-compose.app.override.yaml \
 	up
 
+.PHONY: upd-app
+upd-app:
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	up -d
+
 .PHONY: stop-app
 stop-app:
 	docker compose \
