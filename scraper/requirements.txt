@@ -3,3 +3,4 @@ recipe-scrapers==14.55.0
 gunicorn==21.2.0
 Flask-Caching==2.1.0
 redis==5.0.1
+lxml==5.1.0
