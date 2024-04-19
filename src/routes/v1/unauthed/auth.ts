@@ -191,7 +191,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("User is banned");
       }
 
-      if (!user.gcSubscriptionId) {
+      if (user.subscriptionType === "PREMIUM" && !user.gcSubscriptionId) {
         fastify.log.error(`User ${email} does not have a subscription`);
         reply.code(403);
         throw new Error(`User does not have a subscription|${user.uuid}`);
@@ -261,7 +261,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("User is banned");
       }
 
-      if (!user.gcSubscriptionId) {
+      if (user.subscriptionType === "PREMIUM" && !user.gcSubscriptionId) {
         fastify.log.error(`User ${user.email} does not have a subscription`);
         reply.code(403);
         throw new Error("User does not have a subscription");
@@ -302,34 +302,35 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
           password: hash,
           createdAt: new Date(),
           updatedAt: new Date(),
-          emailVerified: true,
+          emailVerified: false,
           isAdmin: false,
           isBanned: false,
+          subscriptionType: "FREE",
         });
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error registering");
       }
 
-      // const verifyToken = fastify.jwt.sign(
-      //   { email },
-      //   fastify.config.EMAIL_VERIFY_JWT_SECRET,
-      //   { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC }
-      // );
+      const verifyToken = fastify.jwt.sign(
+        { email },
+        fastify.config.EMAIL_VERIFY_JWT_SECRET,
+        { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC }
+      );
 
-      // const appUrl = fastify.config.APP_URL;
+      const appUrl = fastify.config.APP_URL;
 
-      // fastify.amqp.channel.sendToQueue(
-      //   "email",
-      //   Buffer.from(
-      //     JSON.stringify({
-      //       to: email,
-      //       from: fastify.config.SMTP_DEFAULT_FROM,
-      //       subject: "Verify email",
-      //       html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
-      //     }),
-      //   ),
-      // );
+      fastify.amqp.channel.sendToQueue(
+        "email",
+        Buffer.from(
+          JSON.stringify({
+            to: email,
+            from: fastify.config.SMTP_DEFAULT_FROM,
+            subject: "Verify email",
+            html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
+          })
+        )
+      );
 
       return {
         uuid,

@@ -8,6 +8,9 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
 
   fastify.post("/cancel", async (request, reply) => {
     try {
+      if (!request.user?.gcSubscriptionId) {
+        throw new Error("User has no subscription ID");
+      }
       await fastify.gocardless.subscriptions.cancel(
         request.user?.gcSubscriptionId
       );
@@ -42,6 +45,9 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
     async (request, reply) => {
       let subscription: any;
       try {
+        if (!request.user?.gcSubscriptionId) {
+          throw new Error("User has no subscription ID");
+        }
         subscription = await fastify.gocardless.subscriptions.find(
           request.user?.gcSubscriptionId
         );

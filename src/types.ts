@@ -8,6 +8,8 @@ export interface IJwtEmailPayload {
   email: string;
 }
 
+export type SubscriptionType = "FREE" | "PREMIUM";
+
 export interface IDbUser {
   uuid: string;
   createdAt: Date;
@@ -20,6 +22,7 @@ export interface IDbUser {
   isBanned: boolean;
   gcDdMandateId?: string;
   gcSubscriptionId?: string;
+  subscriptionType: SubscriptionType;
 }
 
 export interface IDbMock {
