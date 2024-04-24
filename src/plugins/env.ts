@@ -124,6 +124,9 @@ const envSchema = {
     GOCARDLESS_WEBHOOK_SECRET: {
       type: "string",
     },
+    DEFAULT_RECIPE_IMG: {
+      type: "string",
+    },
   },
 };
 

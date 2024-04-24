@@ -86,5 +86,8 @@ clean-app:
 .PHONY: restart-app
 restart-app: stop-app build-app up-app
 
+.PHONY: restartd-app
+restartd-app: stop-app build-app upd-app
+
 .PHONY: recreate-app
 recreate-app: clean-app build-app up-app

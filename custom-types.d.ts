@@ -49,6 +49,7 @@ declare module "fastify" {
       GOCARDLESS_REDIRECT_URI: string;
       GOCARDLESS_EXIT_URI: string;
       GOCARDLESS_WEBHOOK_SECRET: string;
+      DEFAULT_RECIPE_IMG: string;
     };
 
     mailer: Transporter;

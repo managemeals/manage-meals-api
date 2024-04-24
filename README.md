@@ -1,5 +1,7 @@
 # ManageMeals API
 
+https://managemeals.com
+
 ## MongoDB
 
 ### Creating indexes
@@ -46,4 +48,19 @@ Comment out the handler in the `docker-compose.infra.yaml` and run this:
 
 ```sh
 eval $(cat ../.env.local) node handler.js
+```
+
+## Scraper
+
+### Local development
+
+```sh
+docker build -f scraper.Dockerfile -t scraper . && docker run -p 8000:8000 \
+  -e CACHE_REDIS_HOST='localhost' \
+  -e CACHE_REDIS_PORT='5000' \
+  -e CACHE_REDIS_DB='test' \
+  -e CACHE_REDIS_URL='localhost' \
+  -e CACHE_KEY_PREFIX='mm' \
+  -e PPLX_API_KEY='secret' \
+  scraper
 ```

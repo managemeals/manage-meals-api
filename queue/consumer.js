@@ -37,6 +37,9 @@ const s3Client = new S3Client({
   },
 });
 
+// Defaults
+const DEFAULT_RECIPE_IMG = process.env.DEFAULT_RECIPE_IMG;
+
 // Typesense setup
 // const typesenseClient = new Typesense.Client({
 //   nodes: [
@@ -77,6 +80,7 @@ channel.consume("recipe_image", async (msg) => {
     return;
   }
   let msgObj = {};
+  let imgUrl = DEFAULT_RECIPE_IMG;
   try {
     msgObj = JSON.parse(msg.content.toString());
     const dbRecipe = await db
@@ -85,26 +89,31 @@ channel.consume("recipe_image", async (msg) => {
     if (!dbRecipe) {
       throw new Error("Recipe not found");
     }
-    const imgRes = await axios.get(msgObj.image, {
-      responseType: "arraybuffer",
-    });
-    if (!imgRes) {
-      throw new Error("No image");
+    if (msgObj.image !== imgUrl) {
+      const imgRes = await axios.get(msgObj.image, {
+        responseType: "arraybuffer",
+      });
+      if (!imgRes) {
+        throw new Error("No image");
+      }
+      const contentType = imgRes.headers.get("content-type") || "image/png";
+      const extension = mime.getExtension(contentType);
+      const filename = `mmeals/recipes/images/${msgObj.uuid}.${extension}`;
+      await s3Client.send(
+        new PutObjectCommand({
+          ACL: "public-read",
+          Bucket: process.env.S3_BUCKET,
+          Key: filename,
+          Body: imgRes.data,
+          ContentType: contentType,
+        })
+      );
+      imgUrl = `https://whatacdn.fra1.cdn.digitaloceanspaces.com/${filename}`;
     }
-    // const imgBuffer = Buffer.from(imgRes.data, "binary");
-    const contentType = imgRes.headers.get("content-type") || "image/png";
-    const extension = mime.getExtension(contentType);
-    const filename = `mmeals/recipes/images/${msgObj.uuid}.${extension}`;
-    await s3Client.send(
-      new PutObjectCommand({
-        ACL: "public-read",
-        Bucket: process.env.S3_BUCKET,
-        Key: filename,
-        Body: imgRes.data,
-        ContentType: contentType,
-      }),
-    );
-    const imgUrl = `https://whatacdn.fra1.cdn.digitaloceanspaces.com/${filename}`;
+  } catch (e) {
+    console.log(e);
+  }
+  try {
     await db.collection("recipes").updateOne(
       { uuid: msgObj.uuid },
       {
@@ -112,7 +121,7 @@ channel.consume("recipe_image", async (msg) => {
           updatedAt: new Date(),
           "data.image": imgUrl,
         },
-      },
+      }
     );
   } catch (e) {
     console.log(e);
@@ -120,6 +129,92 @@ channel.consume("recipe_image", async (msg) => {
   }
   channel.ack(msg);
   console.log(`Image saved to recipe ${msgObj.uuid}`);
+});
+
+// User register queue
+await channel.assertQueue("user_register");
+channel.consume("user_register", async (msg) => {
+  if (!msg) {
+    console.log("No msg in user_register queue");
+    return;
+  }
+  let msgObj = {};
+  try {
+    msgObj = JSON.parse(msg.content.toString());
+    await db.collection("categories").insertMany([
+      {
+        uuid: crypto.randomUUID(),
+        slug: "starter",
+        name: "Starter",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        uuid: crypto.randomUUID(),
+        slug: "main",
+        name: "Main",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        uuid: crypto.randomUUID(),
+        slug: "dessert",
+        name: "Dessert",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    await db.collection("tags").insertMany([
+      {
+        uuid: crypto.randomUUID(),
+        slug: "meat",
+        name: "Meat",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        uuid: crypto.randomUUID(),
+        slug: "vegan",
+        name: "Vegan",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        uuid: crypto.randomUUID(),
+        slug: "pasta",
+        name: "Pasta",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        uuid: crypto.randomUUID(),
+        slug: "fish",
+        name: "Fish",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        uuid: crypto.randomUUID(),
+        slug: "quick",
+        name: "Quick",
+        createdByUuid: msgObj.uuid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+  } catch (e) {
+    console.log(e);
+    return;
+  }
+  channel.ack(msg);
+  console.log(`Setup complete for user register ${msgObj.uuid}`);
 });
 
 console.log("Queue consumer is running!");

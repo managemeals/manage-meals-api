@@ -332,6 +332,15 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         )
       );
 
+      fastify.amqp.channel.sendToQueue(
+        "user_register",
+        Buffer.from(
+          JSON.stringify({
+            uuid,
+          })
+        )
+      );
+
       return {
         uuid,
       };
