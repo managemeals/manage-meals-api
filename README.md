@@ -20,6 +20,30 @@ db.tags.createIndex({ uuid: 1 }, { unique: true });
 db.tags.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
 ```
 
+### Creating backups
+
+```sh
+docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	exec -i mongo mongodump --uri "mongodb://user:pass@mongo:27017/db" --authenticationDatabase admin --gzip --archive > /mnt/hetzner/ManageMeals/backups/mongo/prod-`date +"%Y-%m-%d-%H-%M"`.tar.gz
+```
+
+### Restoring a backup
+
+```sh
+docker cp /Users/hilmar/Downloads/prod-2024-04-25-06-26.tar.gz 281d976c63f2:/tmp/prod-2024-04-25-06-26.tar.gz
+
+docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	exec -i mongo mongorestore -v --uri "mongodb://user:pass@mongo:27017" --authenticationDatabase admin --gzip --drop --nsInclude "db.*" --archive="/tmp/prod-2024-04-25-06-26.tar.gz"
+```
+
 ## Queue
 
 ### Local development
