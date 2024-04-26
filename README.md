@@ -86,5 +86,6 @@ docker build -f scraper.Dockerfile -t scraper . && docker run -p 8000:8000 \
   -e CACHE_REDIS_URL='localhost' \
   -e CACHE_KEY_PREFIX='mm' \
   -e PPLX_API_KEY='secret' \
+	-e DEFAULT_RECIPE_IMG="https://example.com" \
   scraper
 ```

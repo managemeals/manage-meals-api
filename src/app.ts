@@ -26,6 +26,24 @@ const app = async (fastify: FastifyInstance, options: Object) => {
     }
   });
 
+  fastify.addHook("onRequest", async (request, reply) => {
+    if (request.raw.url && !request.raw.url.startsWith("/infra/health")) {
+      request.log.info(
+        { url: request.raw.url, id: request.id },
+        "received request"
+      );
+    }
+  });
+
+  fastify.addHook("onResponse", async (request, reply) => {
+    if (request.raw.url && !request.raw.url.startsWith("/infra/health")) {
+      request.log.info(
+        { url: request.raw.url, statusCode: reply.raw.statusCode },
+        "request completed"
+      );
+    }
+  });
+
   await fastify.register(env);
   await fastify.register(mongo);
   await fastify.register(redis);

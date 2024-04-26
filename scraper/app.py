@@ -22,6 +22,7 @@ config = {
 app = Flask(__name__)
 app.config.from_mapping(config)
 cache = Cache(app)
+app.logger.setLevel("INFO")
 
 shutdown = False
 
@@ -29,16 +30,17 @@ shutdown = False
 @cache.cached(timeout=10, query_string=True)
 def scrape_route():
   url = request.args.get("url")
+  app.logger.info(f"Scraping URL {url}")
   try:
     data = scrape_me(url)
     return data.to_json()
   except Exception as e1:
-    app.logger.error(f"scrape_me normal mode did not work, trying wild_mode: {str(e1)}")
+    app.logger.error(f"scrape_me normal mode did not work on URL {url}, trying wild_mode: {str(e1)}")
     try:
       data = scrape_me(url, wild_mode=True)
       return data.to_json()
     except Exception as e2:
-      app.logger.error(f"scrape_me wild_mode did not work, trying AI: {str(e2)}")
+      app.logger.error(f"scrape_me wild_mode did not work on URL {url}, trying AI: {str(e2)}")
       try:
         headers = {
           "accept": "application/json",
@@ -50,7 +52,7 @@ def scrape_route():
           "messages": [
             {
               "role": "system",
-              "content": "Extract recipe data, with a single featured image, from URL and return JSON only. The JSON should contain the keys ingredients, instructions, title, description and image."
+              "content": "Extract recipe data, with a single featured image, from URL and return JSON only. The JSON should contain the keys ingredients, instructions, title, description and image. The key ingredients should be a list of strings, the key instructions should be a list of strings, the key title should be a string, the key description should be a string, the key image should be a string."
             },
             {
               "role": "user",
@@ -70,6 +72,12 @@ def scrape_route():
         msg_content = res_json["choices"][0]["message"]["content"]
         msg_content = msg_content[msg_content.find('{'):msg_content.rfind('}') + 1]
         msg_content_json = json.loads(msg_content)
+        if isinstance(msg_content_json["ingredients"], str):
+          msg_content_json["ingredients"] = [msg_content_json["ingredients"]]
+        if len(msg_content_json["ingredients"]) and not isinstance(msg_content_json["ingredients"][0], str):
+          msg_content_json["ingredients"] = [" ".join(ingredient.values()) for ingredient in msg_content_json["ingredients"]]
+        if isinstance(msg_content_json["instructions"], str):
+          msg_content_json["instructions"] = [msg_content_json["instructions"]]
         scrape_me_json = {
           "canonical_url": url,
           "description": msg_content_json["description"],

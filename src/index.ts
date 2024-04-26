@@ -4,6 +4,7 @@ import app from "./app.js";
 
 const fastify = Fastify({
   logger: true,
+  disableRequestLogging: true,
 }).withTypeProvider<TypeBoxTypeProvider>();
 
 await fastify.register(app);
