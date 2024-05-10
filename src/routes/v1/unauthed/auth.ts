@@ -14,9 +14,7 @@ import {
   TTokenPass,
   TRegister,
   IRegister,
-  IUUID,
   TUUID,
-  TAuthorisationUrl,
 } from "../../../types.js";
 
 const auth = async (fastify: FastifyInstance, options: Object) => {
@@ -191,12 +189,6 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("User is banned");
       }
 
-      if (user.subscriptionType === "PREMIUM" && !user.gcSubscriptionId) {
-        fastify.log.error(`User ${email} does not have a subscription`);
-        reply.code(403);
-        throw new Error(`User does not have a subscription|${user.uuid}`);
-      }
-
       const accessToken = fastify.jwt.sign(
         { uuid: user.uuid },
         fastify.config.ACCESS_JWT_SECRET,
@@ -259,12 +251,6 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         fastify.log.error(`User ${user.email} is banned`);
         reply.code(403);
         throw new Error("User is banned");
-      }
-
-      if (user.subscriptionType === "PREMIUM" && !user.gcSubscriptionId) {
-        fastify.log.error(`User ${user.email} does not have a subscription`);
-        reply.code(403);
-        throw new Error("User does not have a subscription");
       }
 
       const accessToken = fastify.jwt.sign(
@@ -382,146 +368,6 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error resetting password");
-      }
-
-      return {};
-    }
-  );
-
-  fastify.get(
-    "/mandate",
-    { schema: { querystring: TUUID, response: { 200: TAuthorisationUrl } } },
-    async (request: FastifyRequest<{ Querystring: IUUID }>, reply) => {
-      const { uuid } = request.query;
-
-      let user: IDbUser | null;
-      try {
-        user = await usersDbCollection.findOne<IDbUser>({
-          uuid,
-        });
-        if (!user) {
-          fastify.log.error(`User ${uuid} not found`);
-          throw new Error("Error creating mandate");
-        }
-      } catch (e) {
-        fastify.log.error(e);
-        throw new Error("Error creating mandate");
-      }
-
-      if (user.gcDdMandateId) {
-        fastify.log.error(`User ${user.email} already has a GC mandate`);
-        reply.code(400);
-        throw new Error("Error creating mandate, already has one");
-      }
-
-      let authorisationUrl = "";
-      try {
-        const billingRequest = await fastify.gocardless.billingRequests.create({
-          mandate_request: {
-            currency: "GBP",
-            metadata: {
-              useruuid: user.uuid,
-            },
-          },
-        });
-
-        const billingRequestFlow =
-          await fastify.gocardless.billingRequestFlows.create({
-            redirect_uri: `${fastify.config.GOCARDLESS_REDIRECT_URI}?uuid=${user.uuid}`,
-            exit_uri: fastify.config.GOCARDLESS_EXIT_URI,
-            prefilled_customer: {
-              email: user.email,
-            },
-            links: {
-              billing_request: billingRequest.id || "",
-            },
-          });
-
-        authorisationUrl = billingRequestFlow?.authorisation_url || "";
-      } catch (e) {
-        fastify.log.error(e);
-        throw new Error("Error creating mandate");
-      }
-
-      return {
-        authorisationUrl,
-      };
-    }
-  );
-
-  fastify.post(
-    "/subscription",
-    { schema: { body: TUUID } },
-    async (request: FastifyRequest<{ Body: IUUID }>, reply) => {
-      const { uuid } = request.body;
-
-      let user: IDbUser | null;
-      try {
-        user = await usersDbCollection.findOne<IDbUser>({
-          uuid,
-        });
-        if (!user) {
-          fastify.log.error(`User ${uuid} not found`);
-          throw new Error("Error creating subscription");
-        }
-      } catch (e) {
-        fastify.log.error(e);
-        throw new Error("Error creating subscription");
-      }
-
-      if (user.gcSubscriptionId) {
-        fastify.log.error(`User ${user.email} already has a subscription`);
-        reply.code(400);
-        throw new Error("Error creating subscription, already subscribed");
-      }
-
-      let mandateId = user.gcDdMandateId;
-      if (!mandateId) {
-        try {
-          const mandates = await fastify.gocardless.mandates.list();
-          const mandate = mandates.mandates.find(
-            (m: any) => (m.metadata?.useruuid || "") === uuid
-          );
-          if (!mandate) {
-            throw new Error(`No mandate for UUID ${uuid} found`);
-          }
-          mandateId = mandate.id;
-        } catch (e) {
-          fastify.log.error(e);
-          throw new Error("Error creating subscription");
-        }
-      }
-
-      let subscriptionId = "";
-      try {
-        const subscription = await fastify.gocardless.subscriptions.create({
-          amount: "290",
-          currency: "GBP",
-          name: "ManageMeals montly",
-          interval_unit: "monthly",
-          links: {
-            mandate: mandateId,
-          },
-        });
-        subscriptionId = subscription.id;
-      } catch (e) {
-        fastify.log.error(e);
-        throw new Error("Error creating subscription");
-      }
-
-      try {
-        await usersDbCollection.updateOne(
-          { uuid: user.uuid },
-          {
-            $set: {
-              updatedAt: new Date(),
-              gcDdMandateId: mandateId || "",
-              gcSubscriptionId: subscriptionId || "",
-            },
-          }
-        );
-      } catch (e) {
-        fastify.log.error(e);
       }
 
       return {};

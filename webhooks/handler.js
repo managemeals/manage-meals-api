@@ -78,6 +78,7 @@ cron.schedule("*/5 * * * *", async () => {
             updatedAt: new Date(),
             gcDdMandateId: undefined,
             gcSubscriptionId: undefined,
+            subscriptionType: "FREE",
           },
         }
       );

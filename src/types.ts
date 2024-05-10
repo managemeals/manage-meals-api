@@ -35,6 +35,7 @@ export const TUser = Type.Object({
   uuid: Type.Optional(Type.String()),
   name: Type.Optional(Type.String()),
   email: Type.Optional(Type.String({ format: "email" })),
+  subscriptionType: Type.Optional(Type.String()),
 });
 
 export type IUser = Static<typeof TUser>;
