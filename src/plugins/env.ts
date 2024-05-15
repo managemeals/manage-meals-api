@@ -127,6 +127,9 @@ const envSchema = {
     DEFAULT_RECIPE_IMG: {
       type: "string",
     },
+    MAX_FILE_SIZE_BYTES: {
+      type: "number",
+    },
   },
 };
 

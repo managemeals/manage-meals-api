@@ -12,6 +12,9 @@ import typesense from "./plugins/typesense.js";
 import gocardless from "./plugins/gocardless.js";
 import webhooks from "./routes/webhooks/index.js";
 import globalconfig from "./plugins/globalconfig.js";
+import multipart from "./plugins/multipart.js";
+import s3 from "./plugins/s3.js";
+import axios from "./plugins/axios.js";
 
 const app = async (fastify: FastifyInstance, options: Object) => {
   fastify.addHook("preHandler", async (request, reply) => {
@@ -51,10 +54,12 @@ const app = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(bcrypt);
   await fastify.register(jwt);
   await fastify.register(slugify);
-  // await fastify.register(s3);
+  await fastify.register(s3);
   await fastify.register(amqp);
   await fastify.register(typesense);
   await fastify.register(gocardless);
+  await fastify.register(multipart);
+  await fastify.register(axios);
   await fastify.register(globalconfig);
   await fastify.register(infra, { prefix: "/infra" });
   await fastify.register(webhooks, { prefix: "/webhooks" });

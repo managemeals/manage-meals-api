@@ -60,7 +60,7 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
 
       if (email && email !== user.email) {
         setObj["email"] = email;
-        setObj["emailVerified"] = true;
+        setObj["emailVerified"] = false;
       }
 
       if (password) {

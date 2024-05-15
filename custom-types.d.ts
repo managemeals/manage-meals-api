@@ -6,6 +6,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 import amqplib from "amqplib";
 import { Client as TypesenseClient } from "typesense";
 import { Faker } from "@faker-js/faker";
+import { AxiosInstance } from "axios";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -50,6 +51,7 @@ declare module "fastify" {
       GOCARDLESS_EXIT_URI: string;
       GOCARDLESS_WEBHOOK_SECRET: string;
       DEFAULT_RECIPE_IMG: string;
+      MAX_FILE_SIZE_BYTES: number;
     };
 
     mailer: Transporter;
@@ -80,6 +82,8 @@ declare module "fastify" {
     gocardless: any;
 
     globalconfig: IGlobalConfig;
+
+    axios: AxiosInstance;
   }
 
   interface FastifyRequest {

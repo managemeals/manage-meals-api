@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { nanoid } from "nanoid";
+import mime from "mime";
 import {
   ICategoriesTags,
   IDbDeletes,
@@ -17,6 +18,7 @@ import {
   TSlug,
   TUrl,
 } from "../../../types.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const recipes = async (fastify: FastifyInstance, options: Object) => {
   const recipesDbCollection = fastify.mongo.client
@@ -340,6 +342,44 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
     }
   );
 
+  fastify.post(
+    "/",
+    { schema: { body: TRecipe } },
+    async (request: FastifyRequest<{ Body: IRecipe }>, reply) => {
+      const { categoryUuids, tagUuids, rating, data } = request.body;
+
+      if (!data?.title) {
+        reply.code(400);
+        throw new Error("Missing title");
+      }
+
+      const recipeUuid = crypto.randomUUID();
+      const recipeSlug = `${fastify.slugify(data.title)}-${nanoid(8)}`;
+
+      try {
+        await recipesDbCollection.insertOne({
+          uuid: recipeUuid,
+          slug: recipeSlug,
+          createdByUuid: request.user?.uuid,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          categoryUuids: categoryUuids || [],
+          tagUuids: tagUuids || [],
+          rating: 0,
+          data: {
+            ...data,
+            image: fastify.config.DEFAULT_RECIPE_IMG,
+          },
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error creating recipe");
+      }
+
+      return { slug: recipeSlug };
+    }
+  );
+
   fastify.put(
     "/:slug",
     { schema: { params: TSlug, body: TRecipe } },
@@ -374,6 +414,153 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error patching recipe");
+      }
+
+      return {};
+    }
+  );
+
+  fastify.patch(
+    "/:slug/image/file",
+    { schema: { params: TSlug } },
+    async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      const { slug } = request.params;
+
+      let recipe: IRecipe | null;
+      try {
+        recipe = await recipesDbCollection.findOne<IRecipe>({
+          slug,
+          createdByUuid: request.user?.uuid,
+        });
+        if (!recipe) {
+          fastify.log.error(`Recipe ${slug} not found`);
+          reply.code(404);
+          throw new Error("Error patching recipe image");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error patching recipe image");
+      }
+
+      const file = await request.file();
+
+      if (!file) {
+        reply.code(404);
+        throw new Error("No file in body");
+      }
+
+      if (!file.mimetype.startsWith("image")) {
+        reply.code(404);
+        throw new Error("Not an image");
+      }
+
+      let imgUrl = fastify.config.DEFAULT_RECIPE_IMG;
+
+      try {
+        const buffer = await file.toBuffer();
+        const extension = mime.getExtension(file?.mimetype || "");
+        const filename = `mmeals/recipes/upload-images/${recipe.uuid}-${nanoid(
+          6
+        )}.${extension}`;
+        await fastify.s3.send(
+          new PutObjectCommand({
+            ACL: "public-read",
+            Bucket: process.env.S3_BUCKET,
+            Key: filename,
+            Body: buffer,
+            ContentType: file?.mimetype || "image/png",
+          })
+        );
+        imgUrl = `https://whatacdn.fra1.cdn.digitaloceanspaces.com/${filename}`;
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error patching recipe image");
+      }
+
+      try {
+        await recipesDbCollection.updateOne(
+          { uuid: recipe.uuid },
+          {
+            $set: {
+              updatedAt: new Date(),
+              "data.image": imgUrl,
+            },
+          }
+        );
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error patching recipe image");
+      }
+
+      return {};
+    }
+  );
+
+  fastify.patch(
+    "/:slug/image/url",
+    { schema: { body: TUrl, params: TSlug } },
+    async (request: FastifyRequest<{ Body: IUrl; Params: ISlug }>, reply) => {
+      const { url } = request.body;
+      const { slug } = request.params;
+
+      let recipe: IRecipe | null;
+      try {
+        recipe = await recipesDbCollection.findOne<IRecipe>({
+          slug,
+          createdByUuid: request.user?.uuid,
+        });
+        if (!recipe) {
+          fastify.log.error(`Recipe ${slug} not found`);
+          reply.code(404);
+          throw new Error("Error patching recipe image");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error patching recipe image");
+      }
+
+      let imgUrl = fastify.config.DEFAULT_RECIPE_IMG;
+
+      try {
+        const imgRes = await fastify.axios.get(url, {
+          responseType: "arraybuffer",
+        });
+        if (!imgRes) {
+          throw new Error(`No image at URL ${url}`);
+        }
+        const contentType = imgRes.headers["content-type"] || "image/png";
+        const extension = mime.getExtension(contentType);
+        const filename = `mmeals/recipes/upload-images/${recipe.uuid}-${nanoid(
+          6
+        )}.${extension}`;
+        await fastify.s3.send(
+          new PutObjectCommand({
+            ACL: "public-read",
+            Bucket: process.env.S3_BUCKET,
+            Key: filename,
+            Body: imgRes.data,
+            ContentType: contentType,
+          })
+        );
+        imgUrl = `https://whatacdn.fra1.cdn.digitaloceanspaces.com/${filename}`;
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error patching recipe image");
+      }
+
+      try {
+        await recipesDbCollection.updateOne(
+          { uuid: recipe.uuid },
+          {
+            $set: {
+              updatedAt: new Date(),
+              "data.image": imgUrl,
+            },
+          }
+        );
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error patching recipe image");
       }
 
       return {};
