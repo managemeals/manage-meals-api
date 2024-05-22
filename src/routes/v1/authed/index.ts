@@ -8,6 +8,7 @@ import admin from "./admin/index.js";
 import search from "./search.js";
 import help from "./help.js";
 import subscriptions from "./subscriptions.js";
+import premium from "./premium/index.js";
 
 const authed = async (fastify: FastifyInstance, options: Object) => {
   const usersDbCollection = fastify.mongo.client
@@ -63,7 +64,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
           `${CACHE_PREFIX}${jwtPayload.uuid}`,
           JSON.stringify(user),
           "EX",
-          30
+          10
         );
       } catch (e) {
         fastify.log.error(e);
@@ -81,6 +82,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(search, { prefix: "/search" });
   await fastify.register(help, { prefix: "/help" });
   await fastify.register(subscriptions, { prefix: "/subscriptions" });
+  await fastify.register(premium, { prefix: "/" });
 };
 
 export default authed;

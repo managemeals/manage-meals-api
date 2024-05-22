@@ -295,3 +295,41 @@ export type ISubscriptionUpcomingPayment = Static<
 export interface IGlobalConfig {
   isLbShutdown: boolean;
 }
+
+export const TMealPlanMealType = Type.Object({
+  mealType: Type.String(),
+  categoryUuids: Type.Array(Type.String()),
+  tagUuids: Type.Array(Type.String()),
+  categories: Type.Optional(Type.Array(TCategory)),
+  tags: Type.Optional(Type.Array(TTag)),
+  recipe: Type.Optional(TRecipe),
+  recipeUuid: Type.Optional(Type.String()),
+});
+
+export type IMealPlanMealType = Static<typeof TMealPlanMealType>;
+
+export const TMealPlan = Type.Object({
+  uuid: Type.Optional(Type.String()),
+  createdAt: Type.Optional(Type.String({ format: "date-time" })),
+  updatedAt: Type.Optional(Type.String({ format: "date-time" })),
+  createdByUuid: Type.Optional(Type.String()),
+  date: Type.String({ format: "date-time" }),
+  mealTypes: Type.Array(TMealPlanMealType),
+});
+
+export const TMealPlans = Type.Array(TMealPlan);
+
+export type IMealPlan = Static<typeof TMealPlan>;
+
+export interface IDbMealPlan
+  extends Omit<IMealPlan, "createdAt" | "updatedAt" | "date"> {
+  createdAt: Date;
+  updatedAt: Date;
+  date: Date;
+}
+
+export const TMealPlanFilter = Type.Object({
+  dates: Type.Array(Type.String({ format: "date-time" })),
+});
+
+export type IMealPlanFilter = Static<typeof TMealPlanFilter>;
