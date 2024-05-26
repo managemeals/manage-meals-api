@@ -170,22 +170,32 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Meal types have to be unique");
       }
 
+      if (mealTypes.some((mt) => !mt.mealType)) {
+        reply.code(400);
+        throw new Error("Meal type must have a value");
+      }
+
       const qDate = new Date(date);
 
       const recipeMealTypes: IMealPlanMealType[] = [];
 
       for (const mealType of mealTypes) {
+        const matchObj: any = {
+          createdByUuid: request.user?.uuid,
+        };
+        if (mealType.tagUuids && mealType.tagUuids.length) {
+          matchObj.tagUuids = {
+            $all: mealType.tagUuids,
+          };
+        }
+        if (mealType.categoryUuids && mealType.categoryUuids.length) {
+          matchObj.categoryUuids = {
+            $all: mealType.categoryUuids,
+          };
+        }
         const recipePipeline = [
           {
-            $match: {
-              createdByUuid: request.user?.uuid,
-              tagUuids: {
-                $all: mealType.tagUuids,
-              },
-              categoryUuids: {
-                $all: mealType.categoryUuids,
-              },
-            },
+            $match: matchObj,
           },
           {
             $sample: {
@@ -207,6 +217,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
         }
       }
 
+      const uuid = crypto.randomUUID();
       try {
         await mealPlansDbCollection.updateOne(
           {
@@ -225,7 +236,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
               date: new Date(qDate),
               createdByUuid: request.user?.uuid,
               createdAt: new Date(),
-              uuid: crypto.randomUUID(),
+              uuid,
             },
           },
           { upsert: true }
@@ -235,7 +246,9 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error creating meal plan");
       }
 
-      return {};
+      return {
+        uuid,
+      };
     }
   );
 
@@ -262,6 +275,11 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Meal types have to be unique");
       }
 
+      if (mealTypes.some((mt) => !mt.mealType)) {
+        reply.code(400);
+        throw new Error("Meal type must have a value");
+      }
+
       let mealPlan: IMealPlan | null;
       try {
         mealPlan = await mealPlansDbCollection.findOne<IMealPlan>({
@@ -281,17 +299,22 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       const recipeMealTypes: IMealPlanMealType[] = [];
 
       for (const mealType of mealTypes) {
+        const matchObj: any = {
+          createdByUuid: request.user?.uuid,
+        };
+        if (mealType.tagUuids && mealType.tagUuids.length) {
+          matchObj.tagUuids = {
+            $all: mealType.tagUuids,
+          };
+        }
+        if (mealType.categoryUuids && mealType.categoryUuids.length) {
+          matchObj.categoryUuids = {
+            $all: mealType.categoryUuids,
+          };
+        }
         const recipePipeline = [
           {
-            $match: {
-              createdByUuid: request.user?.uuid,
-              tagUuids: {
-                $all: mealType.tagUuids,
-              },
-              categoryUuids: {
-                $all: mealType.categoryUuids,
-              },
-            },
+            $match: matchObj,
           },
           {
             $sample: {
@@ -363,7 +386,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
         },
         {
           $sort: {
-            createdAt: -1,
+            updatedAt: -1,
           },
         },
         {
