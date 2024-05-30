@@ -299,6 +299,13 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       const recipeMealTypes: IMealPlanMealType[] = [];
 
       for (const mealType of mealTypes) {
+        if (mealType.recipeUuid) {
+          recipeMealTypes.push({
+            ...mealType,
+            recipeUuid: mealType.recipeUuid,
+          });
+          continue;
+        }
         const matchObj: any = {
           createdByUuid: request.user?.uuid,
         };

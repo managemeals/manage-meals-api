@@ -182,6 +182,18 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
 
       fastify.log.info(`Importing recipe URL: ${url}`);
 
+      if (
+        (url.startsWith("https://youtube.com") ||
+          url.startsWith("https://www.youtube.com")) &&
+        request.user &&
+        request.user.subscriptionType !== "PREMIUM"
+      ) {
+        reply.code(401);
+        throw new Error(
+          "Premium subscription required to import recipes from YouTube"
+        );
+      }
+
       let recipeJson: IRecipeData;
       try {
         const scraperRes = await fetch(
