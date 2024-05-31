@@ -7,6 +7,7 @@ import amqplib from "amqplib";
 import { Client as TypesenseClient } from "typesense";
 import { Faker } from "@faker-js/faker";
 import { AxiosInstance } from "axios";
+import { SlugifyOptions } from "./src/plugins/slugify.js";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -66,7 +67,7 @@ declare module "fastify" {
       verify: <T>(token: string, secret: string) => T & JwtPayload;
     };
 
-    slugify: (string: string, options?: Options) => string;
+    slugify: (str: string, options?: SlugifyOptions) => string;
 
     s3: S3Client;
 

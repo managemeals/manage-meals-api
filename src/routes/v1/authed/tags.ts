@@ -55,7 +55,7 @@ const tags = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Body: ITag }>, reply) => {
       const { name } = request.body;
 
-      const tagSlug = fastify.slugify(name);
+      const tagSlug = fastify.slugify(name, { maxLength: 100 });
       try {
         await tagsDbCollection.insertOne({
           uuid: crypto.randomUUID(),

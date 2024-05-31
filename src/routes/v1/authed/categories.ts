@@ -51,7 +51,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Body: ICategory }>, reply) => {
       const { name } = request.body;
 
-      const categorySlug = fastify.slugify(name);
+      const categorySlug = fastify.slugify(name, { maxLength: 100 });
       try {
         await categoriesDbCollection.insertOne({
           uuid: crypto.randomUUID(),

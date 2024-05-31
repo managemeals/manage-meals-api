@@ -220,9 +220,9 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       const recipeUuid = crypto.randomUUID();
-      const recipeSlug = `${fastify.slugify(recipeJson.title || "")}-${nanoid(
-        8
-      )}`;
+      const recipeSlug = `${fastify.slugify(recipeJson.title || "", {
+        maxLength: 91,
+      })}-${nanoid(8)}`;
       try {
         await recipesDbCollection.insertOne({
           uuid: recipeUuid,
@@ -366,7 +366,9 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       const recipeUuid = crypto.randomUUID();
-      const recipeSlug = `${fastify.slugify(data.title)}-${nanoid(8)}`;
+      const recipeSlug = `${fastify.slugify(data.title, {
+        maxLength: 91,
+      })}-${nanoid(8)}`;
 
       try {
         await recipesDbCollection.insertOne({
