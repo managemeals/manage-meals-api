@@ -23,7 +23,6 @@ const app = async (fastify: FastifyInstance, options: Object) => {
       request.method !== "GET" &&
       !fastify.config.MOCK_ALLOWED_URLS.split(",").includes(request.url)
     ) {
-      fastify.log.info(request.ip);
       reply.code(403);
       throw new Error("Mock instance only allows GET requests");
     }

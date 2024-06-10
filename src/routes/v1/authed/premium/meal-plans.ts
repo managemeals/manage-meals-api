@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import {
+  IDbDeletes,
   IDbMealPlan,
   IDbRecipe,
   IMealPlan,
@@ -22,6 +23,10 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
   const recipesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection<IDbRecipe>("recipes");
+
+  const deletesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbDeletes>("deletes");
 
   fastify.get(
     "/",
@@ -537,6 +542,22 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Params: IUUID }>, reply) => {
       const { uuid } = request.params;
 
+      let mealPlan: IMealPlan | null;
+      try {
+        mealPlan = await mealPlansDbCollection.findOne<IMealPlan>({
+          uuid,
+          createdByUuid: request.user?.uuid,
+        });
+        if (!mealPlan) {
+          fastify.log.error(`Meal plan ${uuid} not found`);
+          reply.code(404);
+          throw new Error("Error deleting meal plan");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting meal plan");
+      }
+
       try {
         await mealPlansDbCollection.deleteOne({
           uuid,
@@ -545,6 +566,16 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error deleting meal plan");
+      }
+
+      try {
+        await deletesDbCollection.insertOne({
+          collection: "mealplans",
+          uuid: mealPlan.uuid,
+          deletedAt: new Date(),
+        });
+      } catch (e) {
+        fastify.log.error(e);
       }
 
       return {};

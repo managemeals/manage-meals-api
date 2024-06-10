@@ -2,7 +2,9 @@ import { FastifyInstance } from "fastify";
 import {
   IDbCategory,
   IDbDeletes,
+  IDbMealPlan,
   IDbRecipe,
+  IDbShoppingList,
   IDbTag,
   IDbUser,
   TDbMock,
@@ -10,6 +12,7 @@ import {
 import { faker } from "@faker-js/faker";
 import { random, sample, sampleSize } from "lodash-es";
 import { nanoid } from "nanoid";
+import { addDays } from "date-fns";
 
 const mock = async (fastify: FastifyInstance, options: Object) => {
   const tagsDbCollection = fastify.mongo.client
@@ -32,7 +35,17 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
     .db(fastify.config.MONGO_DB)
     .collection<IDbDeletes>("deletes");
 
+  const mealPlansDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbMealPlan>("mealplans");
+
+  const shoppingListsDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbShoppingList>("shoppinglists");
+
   fastify.post("/", async (request, reply) => {
+    const today = new Date();
+
     // Users
     const users: TDbMock<IDbUser>[] = [];
     const hash = await fastify.bcrypt.hash("secret");
@@ -42,7 +55,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       email: "demo@example.com",
       password: hash,
       createdAt: faker.date.past({ years: 3 }),
-      updatedAt: new Date(),
+      updatedAt: today,
       emailVerified: true,
       isAdmin: false,
       isBanned: false,
@@ -79,7 +92,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         uuid: crypto.randomUUID(),
         slug: fastify.slugify(mockTags[i]),
         createdAt: faker.date.past({ years: 3 }),
-        updatedAt: new Date(),
+        updatedAt: today,
         name: mockTags[i],
         createdByUuid: sample(users)?.uuid || "",
         isMock: true,
@@ -109,7 +122,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         uuid: crypto.randomUUID(),
         slug: fastify.slugify(mockCategories[i]),
         createdAt: faker.date.past({ years: 3 }),
-        updatedAt: new Date(),
+        updatedAt: today,
         name: mockCategories[i],
         createdByUuid: sample(users)?.uuid || "",
         isMock: true,
@@ -146,7 +159,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         slug: `${fastify.slugify(currRecipe.title)}-${nanoid(6)}`,
         createdByUuid: sample(users)?.uuid || "",
         createdAt: faker.date.past({ years: 3 }),
-        updatedAt: new Date(),
+        updatedAt: today,
         categoryUuids: sampleSize(categories, random(1, 4)).map(
           (c) => c.uuid || ""
         ),
@@ -203,10 +216,74 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       throw new Error("Error creating recipe mocks");
     }
 
+    // Meal plans
+    const mealPlans: TDbMock<IDbMealPlan>[] = [];
+    for (let i = 0; i < 2000; i++) {
+      mealPlans.push({
+        uuid: crypto.randomUUID(),
+        createdAt: faker.date.past({ years: 3 }),
+        updatedAt: today,
+        date: addDays(today, i),
+        createdByUuid: sample(users)?.uuid || "",
+        mealTypes: [
+          {
+            mealType: "Lunch",
+            categoryUuids: sampleSize(categories, random(1, 2)).map(
+              (c) => c.uuid || ""
+            ),
+            tagUuids: sampleSize(tags, random(1, 3)).map((t) => t.uuid || ""),
+            recipeUuid: sample(recipes)?.uuid || "",
+          },
+          {
+            mealType: "Dinner",
+            categoryUuids: sampleSize(categories, random(1, 2)).map(
+              (c) => c.uuid || ""
+            ),
+            tagUuids: sampleSize(tags, random(1, 3)).map((t) => t.uuid || ""),
+            recipeUuid: sample(recipes)?.uuid || "",
+          },
+        ],
+        isMock: true,
+      });
+    }
+    try {
+      await mealPlansDbCollection.insertMany(mealPlans);
+    } catch (e) {
+      fastify.log.error(e);
+      throw new Error("Error creating meal plan mocks");
+    }
+
+    // Shopping lists
+    const shoppingLists: TDbMock<IDbShoppingList>[] = [];
+    for (let i = 0; i < 20; i++) {
+      const title = `Shopping List ${i + 1}`;
+      shoppingLists.push({
+        uuid: crypto.randomUUID(),
+        createdAt: faker.date.past({ years: 3 }),
+        updatedAt: faker.date.past({ years: 3 }),
+        createdByUuid: sample(users)?.uuid || "",
+        recipeUuids: sampleSize(recipes, random(1, 4)).map((r) => r.uuid || ""),
+        title,
+        slug: `${fastify.slugify(title)}-${nanoid(10)}`,
+        ingredients: sampleSize(recipes, random(1, 4))
+          .map((r) => r.data?.ingredients || [])
+          .flat(),
+        isMock: true,
+      });
+    }
+    try {
+      await shoppingListsDbCollection.insertMany(shoppingLists);
+    } catch (e) {
+      fastify.log.error(e);
+      throw new Error("Error creating shopping list mocks");
+    }
+
     return {};
   });
 
   fastify.delete("/", async (request, reply) => {
+    const today = new Date();
+
     // Users
     try {
       await usersDbCollection.deleteMany({
@@ -254,7 +331,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
         deleteRecipes.map((r) => ({
           collection: "recipes",
           uuid: r.uuid,
-          deletedAt: new Date(),
+          deletedAt: today,
         }))
       );
     } catch (e) {
@@ -269,6 +346,26 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
     } catch (e) {
       fastify.log.error(e);
       throw new Error("Error deleting recipe mocks");
+    }
+
+    // Meal plans
+    try {
+      await mealPlansDbCollection.deleteMany({
+        isMock: true,
+      });
+    } catch (e) {
+      fastify.log.error(e);
+      throw new Error("Error deleting meal plan mocks");
+    }
+
+    // Shopping lists
+    try {
+      await shoppingListsDbCollection.deleteMany({
+        isMock: true,
+      });
+    } catch (e) {
+      fastify.log.error(e);
+      throw new Error("Error deleting shopping list mocks");
     }
 
     return {};

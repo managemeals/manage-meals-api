@@ -333,3 +333,25 @@ export const TMealPlanFilter = Type.Object({
 });
 
 export type IMealPlanFilter = Static<typeof TMealPlanFilter>;
+
+export const TShoppingList = Type.Object({
+  uuid: Type.Optional(Type.String()),
+  slug: Type.Optional(Type.String()),
+  createdAt: Type.Optional(Type.String({ format: "date-time" })),
+  updatedAt: Type.Optional(Type.String({ format: "date-time" })),
+  createdByUuid: Type.Optional(Type.String()),
+  title: Type.String(),
+  ingredients: Type.Optional(Type.Array(Type.String())),
+  recipeUuids: Type.Optional(Type.Array(Type.String())),
+  recipes: Type.Optional(Type.Array(TRecipe)),
+});
+
+export const TShoppingLists = Type.Array(TShoppingList);
+
+export type IShoppingList = Static<typeof TShoppingList>;
+
+export interface IDbShoppingList
+  extends Omit<IShoppingList, "createdAt" | "updatedAt"> {
+  createdAt: Date;
+  updatedAt: Date;
+}

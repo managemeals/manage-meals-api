@@ -18,3 +18,7 @@ db.createCollection("mealplans");
 db.mealplans.createIndex({ uuid: 1 }, { unique: true });
 db.mealplans.createIndex({ uuid: 1, createdByUuid: 1 });
 db.mealplans.createIndex({ date: 1, createdByUuid: 1 });
+
+db.createCollection("shoppinglists");
+db.shoppinglists.createIndex({ uuid: 1 }, { unique: true });
+db.shoppinglists.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });

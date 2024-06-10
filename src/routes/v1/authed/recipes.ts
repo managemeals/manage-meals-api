@@ -196,10 +196,13 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
 
       let recipeJson: IRecipeData;
       try {
-        const scraperRes = await fetch(
-          `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`
+        const scraperRes = await fastify.axios.get(
+          `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`,
+          {
+            timeout: 60000,
+          }
         );
-        recipeJson = (await scraperRes.json()) as IRecipeData;
+        recipeJson = scraperRes.data as IRecipeData;
       } catch (e) {
         fastify.log.error(e);
         reply.code(400);
