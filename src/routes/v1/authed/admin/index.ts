@@ -1,5 +1,7 @@
 import { FastifyInstance } from "fastify";
 import mock from "./mock.js";
+import status from "./status.js";
+import recipes from "./recipes.js";
 
 const admin = async (fastify: FastifyInstance, options: Object) => {
   fastify.addHook("preHandler", async (request, reply) => {
@@ -10,6 +12,8 @@ const admin = async (fastify: FastifyInstance, options: Object) => {
   });
 
   await fastify.register(mock, { prefix: "/mock" });
+  await fastify.register(status, { prefix: "/status" });
+  await fastify.register(recipes, { prefix: "/recipes" });
 };
 
 export default admin;

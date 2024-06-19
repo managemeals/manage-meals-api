@@ -356,3 +356,12 @@ export interface IDbShoppingList
   createdAt: Date;
   updatedAt: Date;
 }
+
+export const TAdminStatus = Type.Object({
+  totalUsers: Type.Number(),
+  totalRecipes: Type.Number(),
+  totalCategories: Type.Number(),
+  totalTags: Type.Number(),
+  totalShoppingLists: Type.Number(),
+  totalMealPlans: Type.Number(),
+});
