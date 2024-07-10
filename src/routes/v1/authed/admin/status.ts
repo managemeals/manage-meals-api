@@ -3,6 +3,7 @@ import {
   IDbCategory,
   IDbMealPlan,
   IDbRecipe,
+  IDbShareRecipe,
   IDbShoppingList,
   IDbTag,
   IDbUser,
@@ -33,6 +34,10 @@ const status = async (fastify: FastifyInstance, options: Object) => {
   const shoppingListsDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection<IDbShoppingList>("shoppinglists");
+
+  const shareRecipesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbShareRecipe>("sharerecipes");
 
   fastify.get(
     "/",
@@ -120,6 +125,19 @@ const status = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error getting total meal plans");
       }
 
+      // Share recipes
+      let totalShareRecipes = 0;
+      const totalShareRecipesCursor =
+        shareRecipesDbCollection.aggregate(totalPipeline);
+      try {
+        for await (const doc of totalShareRecipesCursor) {
+          totalShareRecipes = doc.count;
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting total share recipes");
+      }
+
       return {
         totalUsers,
         totalRecipes,
@@ -127,6 +145,7 @@ const status = async (fastify: FastifyInstance, options: Object) => {
         totalTags,
         totalShoppingLists,
         totalMealPlans,
+        totalShareRecipes,
       };
     }
   );

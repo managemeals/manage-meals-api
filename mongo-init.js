@@ -5,6 +5,7 @@ db.users.createIndex({ email: 1 }, { unique: true });
 db.createCollection("recipes");
 db.recipes.createIndex({ uuid: 1 }, { unique: true });
 db.recipes.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
+db.recipes.createIndex({ uuid: 1, createdByUuid: 1 });
 
 db.createCollection("tags");
 db.tags.createIndex({ uuid: 1 }, { unique: true });
@@ -22,3 +23,9 @@ db.mealplans.createIndex({ date: 1, createdByUuid: 1 });
 db.createCollection("shoppinglists");
 db.shoppinglists.createIndex({ uuid: 1 }, { unique: true });
 db.shoppinglists.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
+
+db.createCollection("sharerecipes");
+db.sharerecipes.createIndex({ uuid: 1 }, { unique: true });
+db.sharerecipes.createIndex({ slug: 1 }, { unique: true });
+db.sharerecipes.createIndex({ slug: 1, createdByUuid: 1 });
+db.sharerecipes.createIndex({ recipeUuid: 1, createdByUuid: 1 });

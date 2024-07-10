@@ -9,6 +9,7 @@ import search from "./search.js";
 import help from "./help.js";
 import subscriptions from "./subscriptions.js";
 import premium from "./premium/index.js";
+import share from "./share.js";
 
 const authed = async (fastify: FastifyInstance, options: Object) => {
   const usersDbCollection = fastify.mongo.client
@@ -83,6 +84,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(help, { prefix: "/help" });
   await fastify.register(subscriptions, { prefix: "/subscriptions" });
   await fastify.register(premium, { prefix: "/" });
+  await fastify.register(share, { prefix: "/share" });
 };
 
 export default authed;

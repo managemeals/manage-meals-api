@@ -5,6 +5,7 @@ import {
   ICategoriesTags,
   IDbDeletes,
   IDbRecipe,
+  IDbShareRecipe,
   IRecipe,
   IRecipeData,
   IRecipeFilter,
@@ -15,6 +16,7 @@ import {
   TRecipe,
   TRecipeFilter,
   TRecipes,
+  TShareRecipes,
   TSlug,
   TUrl,
 } from "../../../types.js";
@@ -28,6 +30,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
   const deletesDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection<IDbDeletes>("deletes");
+
+  const shareRecipesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbShareRecipe>("sharerecipes");
 
   fastify.get(
     "/",
@@ -353,6 +359,15 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         fastify.log.error(e);
       }
 
+      try {
+        await shareRecipesDbCollection.deleteMany({
+          recipeUuid: recipe.uuid,
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+      }
+
       return {};
     }
   );
@@ -581,6 +596,47 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
+    }
+  );
+
+  fastify.get(
+    "/:slug/shares",
+    { schema: { params: TSlug, response: { 200: TShareRecipes } } },
+    async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      const { slug } = request.params;
+
+      let recipe: IRecipe | null;
+      try {
+        recipe = await recipesDbCollection.findOne<IRecipe>({
+          slug,
+          createdByUuid: request.user?.uuid,
+        });
+        if (!recipe) {
+          fastify.log.error(`Recipe ${slug} not found`);
+          reply.code(404);
+          throw new Error("Error getting recipe share");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting recipe share");
+      }
+
+      const cursor = shareRecipesDbCollection.find(
+        {
+          recipeUuid: recipe.uuid,
+          createdByUuid: request.user?.uuid,
+        },
+        { sort: { createdAt: -1 } }
+      );
+      let shareRecipes = [];
+      try {
+        shareRecipes = await cursor.toArray();
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error gettings share recipes");
+      }
+
+      return shareRecipes;
     }
   );
 };

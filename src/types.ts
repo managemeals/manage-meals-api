@@ -364,4 +364,25 @@ export const TAdminStatus = Type.Object({
   totalTags: Type.Number(),
   totalShoppingLists: Type.Number(),
   totalMealPlans: Type.Number(),
+  totalShareRecipes: Type.Number(),
 });
+
+export const TShareRecipe = Type.Object({
+  uuid: Type.Optional(Type.String()),
+  slug: Type.Optional(Type.String()),
+  createdAt: Type.Optional(Type.String({ format: "date-time" })),
+  updatedAt: Type.Optional(Type.String({ format: "date-time" })),
+  createdByUuid: Type.Optional(Type.String()),
+  recipe: Type.Optional(TRecipe),
+  recipeUuid: Type.String(),
+});
+
+export const TShareRecipes = Type.Array(TShareRecipe);
+
+export type IShareRecipe = Static<typeof TShareRecipe>;
+
+export interface IDbShareRecipe
+  extends Omit<IShareRecipe, "createdAt" | "updatedAt"> {
+  createdAt: Date;
+  updatedAt: Date;
+}
