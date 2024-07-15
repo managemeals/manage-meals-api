@@ -1,7 +1,10 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import {
   IDbUser,
+  IPayPal,
+  ISubscriptionUpcomingPayment,
   TAuthorisationUrl,
+  TPayPal,
   TSubscriptionUpcomingPayments,
 } from "../../../types.js";
 
@@ -120,16 +123,58 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
   );
 
   fastify.post("/cancel", async (request, reply) => {
-    try {
-      if (!request.user?.gcSubscriptionId) {
-        throw new Error("User has no subscription ID");
+    if (request.user?.gcSubscriptionId) {
+      try {
+        await fastify.gocardless.subscriptions.cancel(
+          request.user.gcSubscriptionId
+        );
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error cancelling subscription");
       }
-      await fastify.gocardless.subscriptions.cancel(
-        request.user?.gcSubscriptionId
-      );
-    } catch (e) {
-      fastify.log.error(e);
-      throw new Error("Error cancelling subscription");
+    }
+
+    if (request.user?.ppSubscriptionId) {
+      let payPalToken = "";
+      try {
+        const res = await fastify.axios.post(
+          `${fastify.config.PAYPAL_API_URL}/v1/oauth2/token`,
+          "grant_type=client_credentials",
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            auth: {
+              username: fastify.config.PAYPAL_APP_CLIENT_ID,
+              password: fastify.config.PAYPAL_APP_SECRET,
+            },
+          }
+        );
+        payPalToken = res.data.access_token;
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting PayPal token");
+      }
+
+      try {
+        await fastify.axios.post(
+          `${fastify.config.PAYPAL_API_URL}/v1/billing/subscriptions/${request.user.ppSubscriptionId}/cancel`,
+          {
+            reason: "Don't need Premium features",
+          },
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${payPalToken}`,
+            },
+          }
+        );
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error cancelling subscription");
+      }
     }
 
     try {
@@ -142,6 +187,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
             updatedAt: new Date(),
             gcSubscriptionId: undefined,
             subscriptionType: "FREE",
+            ppSubscriptionId: undefined,
           },
         }
       );
@@ -157,23 +203,140 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
     "/payments",
     { schema: { response: { 200: TSubscriptionUpcomingPayments } } },
     async (request, reply) => {
-      let subscription: any;
-      try {
-        if (!request.user?.gcSubscriptionId) {
-          throw new Error("User has no subscription ID");
+      let upcomingPayments: ISubscriptionUpcomingPayment[] = [];
+
+      if (request.user?.gcSubscriptionId) {
+        try {
+          const subscription: any = await fastify.gocardless.subscriptions.find(
+            request.user.gcSubscriptionId
+          );
+          upcomingPayments = subscription.upcoming_payments.map(
+            (payment: any) => ({
+              chargeDate: payment.charge_date,
+              amount: payment.amount,
+            })
+          );
+        } catch (e) {
+          fastify.log.error(e);
         }
-        subscription = await fastify.gocardless.subscriptions.find(
-          request.user?.gcSubscriptionId
+      }
+
+      if (request.user?.ppSubscriptionId) {
+        let payPalToken = "";
+        try {
+          const res = await fastify.axios.post(
+            `${fastify.config.PAYPAL_API_URL}/v1/oauth2/token`,
+            "grant_type=client_credentials",
+            {
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              auth: {
+                username: fastify.config.PAYPAL_APP_CLIENT_ID,
+                password: fastify.config.PAYPAL_APP_SECRET,
+              },
+            }
+          );
+          payPalToken = res.data.access_token;
+        } catch (e) {
+          fastify.log.error(e);
+          throw new Error("Error getting PayPal token");
+        }
+
+        try {
+          const res = await fastify.axios.get(
+            `${fastify.config.PAYPAL_API_URL}/v1/billing/subscriptions/${request.user.ppSubscriptionId}`,
+            {
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${payPalToken}`,
+              },
+            }
+          );
+          upcomingPayments = [
+            {
+              chargeDate: res.data.billing_info.next_billing_time,
+              amount: 290,
+            },
+          ];
+        } catch (e) {
+          fastify.log.error(e);
+        }
+      }
+
+      return upcomingPayments;
+    }
+  );
+
+  fastify.post(
+    "/paypal",
+    {
+      schema: {
+        body: TPayPal,
+      },
+    },
+    async (request: FastifyRequest<{ Body: IPayPal }>, reply) => {
+      const { subscriptionId } = request.body;
+
+      let payPalToken = "";
+      try {
+        const res = await fastify.axios.post(
+          `${fastify.config.PAYPAL_API_URL}/v1/oauth2/token`,
+          "grant_type=client_credentials",
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            auth: {
+              username: fastify.config.PAYPAL_APP_CLIENT_ID,
+              password: fastify.config.PAYPAL_APP_SECRET,
+            },
+          }
+        );
+        payPalToken = res.data.access_token;
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting PayPal token");
+      }
+
+      try {
+        const res = await fastify.axios.get(
+          `${fastify.config.PAYPAL_API_URL}/v1/billing/subscriptions/${subscriptionId}`,
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${payPalToken}`,
+            },
+          }
+        );
+        if (!res.data.status || res.data.status !== "ACTIVE") {
+          throw new Error("Subscription status is not ACTIVE");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting PayPal subscription");
+      }
+
+      try {
+        await usersDbCollection.updateOne(
+          { uuid: request.user?.uuid },
+          {
+            $set: {
+              updatedAt: new Date(),
+              ppSubscriptionId: subscriptionId || "",
+              subscriptionType: "PREMIUM",
+            },
+          }
         );
       } catch (e) {
         fastify.log.error(e);
-        throw new Error("Error getting subscription");
       }
 
-      return subscription.upcoming_payments.map((payment: any) => ({
-        chargeDate: payment.charge_date,
-        amount: payment.amount,
-      }));
+      return {};
     }
   );
 };

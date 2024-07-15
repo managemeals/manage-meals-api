@@ -53,6 +53,9 @@ declare module "fastify" {
       GOCARDLESS_WEBHOOK_SECRET: string;
       DEFAULT_RECIPE_IMG: string;
       MAX_FILE_SIZE_BYTES: number;
+      PAYPAL_APP_CLIENT_ID: string;
+      PAYPAL_APP_SECRET: string;
+      PAYPAL_API_URL: string;
     };
 
     mailer: Transporter;

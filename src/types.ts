@@ -23,6 +23,7 @@ export interface IDbUser {
   gcDdMandateId?: string;
   gcSubscriptionId?: string;
   subscriptionType: SubscriptionType;
+  ppSubscriptionId?: string;
 }
 
 export interface IDbMock {
@@ -386,3 +387,9 @@ export interface IDbShareRecipe
   createdAt: Date;
   updatedAt: Date;
 }
+
+export const TPayPal = Type.Object({
+  subscriptionId: Type.String(),
+});
+
+export type IPayPal = Static<typeof TPayPal>;

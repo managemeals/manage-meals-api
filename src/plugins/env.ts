@@ -130,6 +130,15 @@ const envSchema = {
     MAX_FILE_SIZE_BYTES: {
       type: "number",
     },
+    PAYPAL_APP_CLIENT_ID: {
+      type: "string",
+    },
+    PAYPAL_APP_SECRET: {
+      type: "string",
+    },
+    PAYPAL_API_URL: {
+      type: "string",
+    },
   },
 };
 

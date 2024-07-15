@@ -46,45 +46,85 @@ cron.schedule("*/5 * * * *", async () => {
   console.log(`${webhooks.length} new webhooks`);
 
   for (const webhook of webhooks) {
-    if (!webhook.events) {
-      continue;
-    }
-    const mandateCancelledEvent = webhook.events.find(
-      (ev) => ev.resource_type === "mandates" && ev.action === "cancelled"
-    );
-    if (!mandateCancelledEvent || !mandateCancelledEvent.links.mandate) {
-      continue;
-    }
-    console.log("Mandate cancelled:", mandateCancelledEvent);
-    try {
-      const dbUser = await usersDbColl.findOne({
-        gcDdMandateId: mandateCancelledEvent.links.mandate,
-      });
-      if (!dbUser) {
-        console.log("User not found");
+    // GoCardless
+    if (webhook.events) {
+      const mandateCancelledEvent = webhook.events.find(
+        (ev) => ev.resource_type === "mandates" && ev.action === "cancelled"
+      );
+      if (!mandateCancelledEvent || !mandateCancelledEvent.links.mandate) {
         continue;
       }
-    } catch (e) {
-      console.log(e);
-      continue;
-    }
-    try {
-      await usersDbColl.updateOne(
-        {
+      console.log("Mandate cancelled:", mandateCancelledEvent);
+      try {
+        const dbUser = await usersDbColl.findOne({
           gcDdMandateId: mandateCancelledEvent.links.mandate,
-        },
-        {
-          $set: {
-            updatedAt: new Date(),
-            gcDdMandateId: undefined,
-            gcSubscriptionId: undefined,
-            subscriptionType: "FREE",
-          },
+        });
+        if (!dbUser) {
+          console.log(
+            "User not found, gcDdMandateId:",
+            mandateCancelledEvent.links.mandate
+          );
+          continue;
         }
-      );
-    } catch (e) {
-      console.log(e);
-      continue;
+      } catch (e) {
+        console.log(e);
+        continue;
+      }
+      try {
+        await usersDbColl.updateOne(
+          {
+            gcDdMandateId: mandateCancelledEvent.links.mandate,
+          },
+          {
+            $set: {
+              updatedAt: new Date(),
+              gcDdMandateId: undefined,
+              gcSubscriptionId: undefined,
+              subscriptionType: "FREE",
+            },
+          }
+        );
+      } catch (e) {
+        console.log(e);
+        continue;
+      }
+    }
+
+    // PayPal
+    if (
+      webhook.event_type &&
+      webhook.event_type === "BILLING.SUBSCRIPTION.CANCELLED"
+    ) {
+      console.log("PayPal subscription cancelled:", webhook.resource.id);
+      try {
+        const dbUser = await usersDbColl.findOne({
+          ppSubscriptionId: webhook.resource.id,
+        });
+        if (!dbUser) {
+          console.log("User not found, ppSubscriptionId:", webhook.resource.id);
+          continue;
+        }
+      } catch (e) {
+        console.log(e);
+        continue;
+      }
+      try {
+        await usersDbColl.updateOne(
+          {
+            ppSubscriptionId: webhook.resource.id,
+          },
+          {
+            $set: {
+              updatedAt: new Date(),
+              ppSubscriptionId: undefined,
+              subscriptionType: "FREE",
+            },
+          }
+        );
+      } catch (e) {
+        console.log(e);
+        continue;
+      }
     }
   }
 
