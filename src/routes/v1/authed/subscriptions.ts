@@ -42,7 +42,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
     let subscriptionId = "";
     try {
       const subscription = await fastify.gocardless.subscriptions.create({
-        amount: "290",
+        amount: "190",
         currency: "GBP",
         name: "ManageMeals montly",
         interval_unit: "monthly",
@@ -258,7 +258,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
           upcomingPayments = [
             {
               chargeDate: res.data.billing_info.next_billing_time,
-              amount: 290,
+              amount: 190,
             },
           ];
         } catch (e) {
