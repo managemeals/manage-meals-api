@@ -60,7 +60,7 @@ const mock = async (fastify: FastifyInstance, options: Object) => {
       isAdmin: false,
       isBanned: false,
       isMock: true,
-      subscriptionType: "PREMIUM",
+      subscriptionType: "FREE",
     });
     try {
       await usersDbCollection.insertMany(users);

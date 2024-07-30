@@ -56,6 +56,7 @@ declare module "fastify" {
       PAYPAL_APP_CLIENT_ID: string;
       PAYPAL_APP_SECRET: string;
       PAYPAL_API_URL: string;
+      PREMIUM_PRICE_PENNIES: number;
     };
 
     mailer: Transporter;

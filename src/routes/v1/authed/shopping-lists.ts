@@ -7,7 +7,7 @@ import {
   TShoppingList,
   TShoppingLists,
   TSlug,
-} from "../../../../types.js";
+} from "../../../types.js";
 import { nanoid } from "nanoid";
 
 const shoppingLists = async (fastify: FastifyInstance, options: Object) => {

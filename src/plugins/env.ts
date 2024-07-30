@@ -139,6 +139,9 @@ const envSchema = {
     PAYPAL_API_URL: {
       type: "string",
     },
+    PREMIUM_PRICE_PENNIES: {
+      type: "number",
+    },
   },
 };
 

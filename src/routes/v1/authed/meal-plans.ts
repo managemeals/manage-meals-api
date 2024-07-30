@@ -12,7 +12,7 @@ import {
   TMealPlanFilter,
   TMealPlans,
   TUUID,
-} from "../../../../types.js";
+} from "../../../types.js";
 import { differenceInDays, endOfDay, startOfDay } from "date-fns";
 
 const mealPlans = async (fastify: FastifyInstance, options: Object) => {
