@@ -142,6 +142,9 @@ const envSchema = {
     PREMIUM_PRICE_PENNIES: {
       type: "number",
     },
+    EMAIL_VERIFY_ENABLED: {
+      type: "boolean",
+    },
   },
 };
 

@@ -26,6 +26,10 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
     "/email-verify",
     { schema: { body: TToken } },
     async (request: FastifyRequest<{ Body: IToken }>, reply) => {
+      if (!fastify.config.EMAIL_VERIFY_ENABLED) {
+        throw new Error("Email verification is not enabled");
+      }
+
       const { token } = request.body;
 
       let jwtPayload: IJwtEmailPayload;
@@ -65,6 +69,10 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
     "/email-verify-resend",
     { schema: { body: TEmail } },
     async (request: FastifyRequest<{ Body: IEmail }>, reply) => {
+      if (!fastify.config.EMAIL_VERIFY_ENABLED) {
+        throw new Error("Email verification is not enabled");
+      }
+
       const { email } = request.body;
 
       let user: IDbUser | null;
@@ -288,7 +296,7 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
           password: hash,
           createdAt: new Date(),
           updatedAt: new Date(),
-          emailVerified: false,
+          emailVerified: !fastify.config.EMAIL_VERIFY_ENABLED,
           isAdmin: false,
           isBanned: false,
           subscriptionType: "FREE",
@@ -306,17 +314,19 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
 
       const appUrl = fastify.config.APP_URL;
 
-      fastify.amqp.channel.sendToQueue(
-        "email",
-        Buffer.from(
-          JSON.stringify({
-            to: email,
-            from: fastify.config.SMTP_DEFAULT_FROM,
-            subject: "Verify email",
-            html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
-          })
-        )
-      );
+      if (fastify.config.EMAIL_VERIFY_ENABLED) {
+        fastify.amqp.channel.sendToQueue(
+          "email",
+          Buffer.from(
+            JSON.stringify({
+              to: email,
+              from: fastify.config.SMTP_DEFAULT_FROM,
+              subject: "Verify email",
+              html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
+            })
+          )
+        );
+      }
 
       fastify.amqp.channel.sendToQueue(
         "user_register",

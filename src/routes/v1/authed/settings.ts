@@ -1,10 +1,50 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { IDbUser, IUserPatch, TUser, TUserPatch } from "../../../types.js";
+import {
+  IDbCategory,
+  IDbDeletes,
+  IDbMealPlan,
+  IDbRecipe,
+  IDbShareRecipe,
+  IDbShoppingList,
+  IDbTag,
+  IDbUser,
+  IUserPatch,
+  TUser,
+  TUserPatch,
+} from "../../../types.js";
 
 const settings = async (fastify: FastifyInstance, options: Object) => {
+  const tagsDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbTag>("tags");
+
+  const categoriesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbCategory>("categories");
+
   const usersDbCollection = fastify.mongo.client
     .db(fastify.config.MONGO_DB)
     .collection<IDbUser>("users");
+
+  const recipesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbRecipe>("recipes");
+
+  const deletesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbDeletes>("deletes");
+
+  const mealPlansDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbMealPlan>("mealplans");
+
+  const shoppingListsDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbShoppingList>("shoppinglists");
+
+  const shareRecipesDbCollection = fastify.mongo.client
+    .db(fastify.config.MONGO_DB)
+    .collection<IDbShareRecipe>("sharerecipes");
 
   fastify.get(
     "/user",
@@ -60,7 +100,7 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
 
       if (email && email !== user.email) {
         setObj["email"] = email;
-        setObj["emailVerified"] = false;
+        setObj["emailVerified"] = !fastify.config.EMAIL_VERIFY_ENABLED;
       }
 
       if (password) {
@@ -80,7 +120,11 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error patching user");
       }
 
-      if ("emailVerified" in setObj && setObj.emailVerified === false) {
+      if (
+        "emailVerified" in setObj &&
+        setObj.emailVerified === false &&
+        fastify.config.EMAIL_VERIFY_ENABLED
+      ) {
         const verifyToken = fastify.jwt.sign(
           { email },
           fastify.config.EMAIL_VERIFY_JWT_SECRET,
@@ -102,6 +146,109 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
+    }
+  );
+
+  fastify.delete(
+    "/user",
+    async (request: FastifyRequest<{ Body: IUserPatch }>, reply) => {
+      const today = new Date();
+
+      // Tags
+      try {
+        await tagsDbCollection.deleteMany({
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting tags");
+      }
+
+      // Categories
+      try {
+        await categoriesDbCollection.deleteMany({
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting categories");
+      }
+
+      // Recipes
+      const deleteCursor = recipesDbCollection.find({
+        createdByUuid: request.user?.uuid,
+      });
+      let deleteRecipes = [];
+      try {
+        deleteRecipes = await deleteCursor.toArray();
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error gettings delete recipes");
+      }
+
+      if (deleteRecipes.length) {
+        try {
+          await deletesDbCollection.insertMany(
+            deleteRecipes.map((r) => ({
+              collection: "recipes",
+              uuid: r.uuid,
+              deletedAt: today,
+            }))
+          );
+        } catch (e) {
+          fastify.log.error(e);
+          throw new Error("Error inserting deleted recipes");
+        }
+      }
+
+      try {
+        await recipesDbCollection.deleteMany({
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting recipes");
+      }
+
+      // Meal plans
+      try {
+        await mealPlansDbCollection.deleteMany({
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting meal plans");
+      }
+
+      // Shopping lists
+      try {
+        await shoppingListsDbCollection.deleteMany({
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting shopping lists");
+      }
+
+      // Recipe shares
+      try {
+        await shareRecipesDbCollection.deleteMany({
+          createdByUuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting recipe shares");
+      }
+
+      // User
+      try {
+        await usersDbCollection.deleteOne({
+          uuid: request.user?.uuid,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error deleting user");
+      }
     }
   );
 };
