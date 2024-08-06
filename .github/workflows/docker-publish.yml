@@ -16,15 +16,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - image: managemeals/manage-meals-api
+          - image: ghcr.io/managemeals/manage-meals-api
             dockerfile: Dockerfile
-          - image: managemeals/manage-meals-scraper
+          - image: ghcr.io/managemeals/manage-meals-scraper
             dockerfile: scraper.Dockerfile
-          - image: managemeals/manage-meals-consumer
+          - image: ghcr.io/managemeals/manage-meals-consumer
             dockerfile: consumer.Dockerfile
-          - image: managemeals/manage-meals-search-sync
+          - image: ghcr.io/managemeals/manage-meals-search-sync
             dockerfile: search-sync.Dockerfile
-          - image: managemeals/manage-meals-webhooks-handler
+          - image: ghcr.io/managemeals/manage-meals-webhooks-handler
             dockerfile: webhooks-handler.Dockerfile
 
     steps:
