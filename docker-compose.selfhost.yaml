@@ -23,6 +23,18 @@ services:
 
   manage-meals-web:
     image: ghcr.io/managemeals/manage-meals-web:latest
+    restart: unless-stopped
+    environment:
+      PUBLIC_MAIN_TITLE: ManageMeals
+      PASSWORD_MIN_LENGTH: 6
+      API_URL: http://manage-meals-api:3000/v1
+      COOKIE_ACCESS_TOKEN: mmeals_access_token
+      COOKIE_REFRESH_TOKEN: mmeals_refresh_token
+      COOKIE_ACCESS_TOKEN_EXPIRE_SEC: 300
+      COOKIE_REFRESH_TOKEN_EXPIRE_SEC: 7200
+      INFRA_ENDPOINT_KEY: secret
+      ORIGIN: http://localhost:3001
+      BODY_SIZE_LIMIT: Infinity
 
   mongo:
     image: mongo:7
@@ -52,9 +64,7 @@ services:
     restart: unless-stopped
 
   recipe-scraper:
-    build:
-      context: .
-      dockerfile: scraper.Dockerfile
+    image: ghcr.io/managemeals/manage-meals-scraper:latest
     restart: unless-stopped
 
   typesense:
@@ -69,9 +79,7 @@ services:
       - typesense-data:/data
 
   search-sync:
-    build:
-      context: .
-      dockerfile: search-sync.Dockerfile
+    image: ghcr.io/managemeals/manage-meals-search-sync:latest
     restart: unless-stopped
     environment:
       MONGO_URL: mongodb://root:secret@mongo:27017/
