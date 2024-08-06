@@ -2,6 +2,10 @@
 
 This is the ManageMeals backend, what powers https://managemeals.com. It's a Fastify app.
 
+## Self-hosting
+
+See the [wiki](https://github.com/managemeals/manage-meals-api/wiki/Self%E2%80%90hosting).
+
 ## Development
 
 Setup the environment variables:
@@ -9,7 +13,6 @@ Setup the environment variables:
 ```bash
 cp .env.docker.example .env.docker
 cp .env.example .env
-cp .env.example .env.local
 ```
 
 Then there are two `docker-compose` files, one which only starts the required services (MongoDB, Redis, etc.), and one which starts the API itself.
@@ -71,7 +74,7 @@ npm run dev
 Comment out the consumer in the `docker-compose.infra.yaml` and run this:
 
 ```sh
-eval $(cat ../.env.local) node consumer.js
+eval $(cat ../.env) node consumer.js
 ```
 
 ### Search
@@ -81,7 +84,7 @@ eval $(cat ../.env.local) node consumer.js
 Comment out the sync in the `docker-compose.infra.yaml` and run this:
 
 ```sh
-eval $(cat ../.env.local) node sync.js
+eval $(cat ../.env) node sync.js
 ```
 
 ### Webhooks
@@ -91,7 +94,7 @@ eval $(cat ../.env.local) node sync.js
 Comment out the handler in the `docker-compose.infra.yaml` and run this:
 
 ```sh
-eval $(cat ../.env.local) node handler.js
+eval $(cat ../.env) node handler.js
 ```
 
 ### Scraper

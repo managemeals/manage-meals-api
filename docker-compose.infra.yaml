@@ -27,9 +27,7 @@ services:
       - mmeals_net
 
   recipe-scraper-01:
-    build:
-      context: .
-      dockerfile: scraper.Dockerfile
+    image: ghcr.io/managemeals/manage-meals-scraper:latest
     restart: unless-stopped
     env_file:
       - ./.env.docker
@@ -39,9 +37,7 @@ services:
       - mmeals_net
 
   recipe-scraper-02:
-    build:
-      context: .
-      dockerfile: scraper.Dockerfile
+    image: ghcr.io/managemeals/manage-meals-scraper:latest
     restart: unless-stopped
     env_file:
       - ./.env.docker
@@ -87,9 +83,7 @@ services:
       - mmeals_net
 
   queue-consumer:
-    build:
-      context: .
-      dockerfile: consumer.Dockerfile
+    image: ghcr.io/managemeals/manage-meals-consumer:latest
     restart: unless-stopped
     env_file:
       - ./.env.docker
@@ -101,9 +95,7 @@ services:
       - mmeals_net
 
   search-sync:
-    build:
-      context: .
-      dockerfile: search-sync.Dockerfile
+    image: ghcr.io/managemeals/manage-meals-search-sync:latest
     restart: unless-stopped
     env_file:
       - ./.env.docker
@@ -114,9 +106,7 @@ services:
       - mmeals_net
 
   webhooks-handler:
-    build:
-      context: .
-      dockerfile: webhooks-handler.Dockerfile
+    image: ghcr.io/managemeals/manage-meals-webhooks-handler:latest
     restart: unless-stopped
     env_file:
       - ./.env.docker

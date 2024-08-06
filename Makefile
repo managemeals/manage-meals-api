@@ -31,6 +31,13 @@ clean-infra:
 	-f docker-compose.infra.override.yaml \
 	down -v
 
+.PHONY: pull-infra
+pull-infra:
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.infra.override.yaml \
+	pull
+
 .PHONY: restart-infra
 restart-infra: stop-infra build-infra up-infra
 
@@ -83,6 +90,15 @@ clean-app:
 	-f docker-compose.app.override.yaml \
 	down -v
 
+.PHONY: pull-app
+pull-app:
+	docker compose \
+	-f docker-compose.infra.yaml \
+	-f docker-compose.app.yaml \
+	-f docker-compose.infra.override.yaml \
+	-f docker-compose.app.override.yaml \
+	pull
+
 .PHONY: restart-app
 restart-app: stop-app build-app up-app
 
@@ -127,6 +143,13 @@ clean-selfhost:
 	-f docker-compose.selfhost.yaml \
 	-f docker-compose.selfhost.override.yaml \
 	down -v
+
+.PHONY: pull-selfhost
+pull-selfhost:
+	docker compose \
+	-f docker-compose.selfhost.yaml \
+	-f docker-compose.selfhost.override.yaml \
+	pull
 
 .PHONY: restart-selfhost
 restart-selfhost: stop-selfhost build-selfhost up-selfhost

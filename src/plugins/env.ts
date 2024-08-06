@@ -171,13 +171,13 @@ const envSchema = {
 const envOptions = {
   confKey: "config",
   schema: envSchema,
-  // dotenv:
-  //   process.env.APP_ENV !== "production"
-  //     ? {
-  //         path: ".env",
-  //         debug: process.env.APP_ENV !== "production",
-  //       }
-  //     : false,
+  dotenv:
+    process.env.APP_ENV !== "production"
+      ? {
+          path: ".env",
+          debug: process.env.APP_ENV !== "production",
+        }
+      : false,
 };
 
 const env = async (fastify: FastifyInstance, options: Object) => {

@@ -1,7 +1,9 @@
 services:
   manage-meals-app-01:
-    build: .
+    image: ghcr.io/managemeals/manage-meals-api:latest
     restart: unless-stopped
+    env_file:
+      - ./.env
     depends_on:
       - mongo
       - redis
@@ -17,8 +19,10 @@ services:
       - mmeals_net
 
   manage-meals-app-02:
-    build: .
+    image: ghcr.io/managemeals/manage-meals-api:latest
     restart: unless-stopped
+    env_file:
+      - ./.env
     depends_on:
       - mongo
       - redis
