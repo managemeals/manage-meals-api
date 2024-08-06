@@ -60,6 +60,7 @@ declare module "fastify" {
       EMAIL_VERIFY_ENABLED: boolean;
       PROCESS_USER_POST_REGISTER: boolean;
       PROCESS_IMAGE_POST_IMPORT: boolean;
+      USER_REGISTER_ENABLED: boolean;
     };
 
     mailer: Transporter;

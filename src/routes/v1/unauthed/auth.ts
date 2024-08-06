@@ -287,6 +287,10 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
     "/register",
     { schema: { body: TRegister, response: { 200: TUUID } } },
     async (request: FastifyRequest<{ Body: IRegister }>, reply) => {
+      if (!fastify.config.USER_REGISTER_ENABLED) {
+        throw new Error("User register is not enabled");
+      }
+
       const { name, email, password } = request.body;
 
       const hash = await fastify.bcrypt.hash(password);

@@ -161,6 +161,10 @@ const envSchema = {
       type: "boolean",
       default: false,
     },
+    USER_REGISTER_ENABLED: {
+      type: "boolean",
+      default: false,
+    },
   },
 };
 
@@ -168,9 +172,9 @@ const envOptions = {
   confKey: "config",
   schema: envSchema,
   // dotenv:
-  //   process.env.DOTENV_ENABLED === "true"
+  //   process.env.APP_ENV !== "production"
   //     ? {
-  //         path: process.env.APP_ENV === "production" ? ".env" : ".env.local",
+  //         path: ".env",
   //         debug: process.env.APP_ENV !== "production",
   //       }
   //     : false,
