@@ -4,7 +4,7 @@ WORKDIR /app/queue
 
 COPY ["./queue/package.json", "./queue/package-lock.json*", "./"]
 
-RUN npm install
+RUN npm ci
 
 COPY queue /app/queue
 

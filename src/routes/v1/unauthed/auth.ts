@@ -115,6 +115,10 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
     "/forgot-password",
     { schema: { body: TEmail } },
     async (request: FastifyRequest<{ Body: IEmail }>, reply) => {
+      if (!fastify.config.SMTP_HOST) {
+        throw new Error("SMTP not set up");
+      }
+
       const { email } = request.body;
 
       let user: IDbUser | null;
@@ -306,15 +310,15 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error registering");
       }
 
-      const verifyToken = fastify.jwt.sign(
-        { email },
-        fastify.config.EMAIL_VERIFY_JWT_SECRET,
-        { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC }
-      );
-
-      const appUrl = fastify.config.APP_URL;
-
       if (fastify.config.EMAIL_VERIFY_ENABLED) {
+        const verifyToken = fastify.jwt.sign(
+          { email },
+          fastify.config.EMAIL_VERIFY_JWT_SECRET,
+          { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC }
+        );
+
+        const appUrl = fastify.config.APP_URL;
+
         fastify.amqp.channel.sendToQueue(
           "email",
           Buffer.from(
@@ -328,14 +332,16 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         );
       }
 
-      fastify.amqp.channel.sendToQueue(
-        "user_register",
-        Buffer.from(
-          JSON.stringify({
-            uuid,
-          })
-        )
-      );
+      if (fastify.config.PROCESS_USER_POST_REGISTER) {
+        fastify.amqp.channel.sendToQueue(
+          "user_register",
+          Buffer.from(
+            JSON.stringify({
+              uuid,
+            })
+          )
+        );
+      }
 
       return {
         uuid,

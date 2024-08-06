@@ -4,7 +4,7 @@ WORKDIR /app/search
 
 COPY ["./search/package.json", "./search/package-lock.json*", "./"]
 
-RUN npm install
+RUN npm ci
 
 COPY search /app/search
 

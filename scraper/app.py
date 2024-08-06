@@ -6,19 +6,27 @@ import requests
 import json
 from urllib.parse import urlparse
 
-PPLX_API_KEY = os.environ["PPLX_API_KEY"]
-DEFAULT_RECIPE_IMG = os.environ["DEFAULT_RECIPE_IMG"]
+PPLX_API_KEY = os.environ.get("PPLX_API_KEY", "")
+DEFAULT_RECIPE_IMG = os.environ.get("DEFAULT_RECIPE_IMG", "https://whatacdn.fra1.cdn.digitaloceanspaces.com/mmeals/images/default1.jpg")
+CACHE_TIMEOUT = int(os.environ.get("SCRAPER_CACHE_TIMEOUT", 10))
 
 config = {
   "DEBUG": False,
-  "CACHE_TYPE": "RedisCache",
-  "CACHE_DEFAULT_TIMEOUT": 300,
-  "CACHE_REDIS_HOST": os.environ["CACHE_REDIS_HOST"],
-  "CACHE_REDIS_PORT": os.environ["CACHE_REDIS_PORT"],
-  "CACHE_REDIS_DB": os.environ["CACHE_REDIS_DB"],
-  "CACHE_REDIS_URL": os.environ["CACHE_REDIS_URL"],
-  "CACHE_KEY_PREFIX": os.environ["CACHE_KEY_PREFIX"],
 }
+if os.environ.get("CACHE_REDIS_HOST", ""):
+  config.update({
+    "CACHE_TYPE": "RedisCache",
+    "CACHE_DEFAULT_TIMEOUT": 300,
+    "CACHE_REDIS_HOST": os.environ["CACHE_REDIS_HOST"],
+    "CACHE_REDIS_PORT": os.environ["CACHE_REDIS_PORT"],
+    "CACHE_REDIS_DB": os.environ["CACHE_REDIS_DB"],
+    "CACHE_REDIS_URL": os.environ["CACHE_REDIS_URL"],
+    "CACHE_KEY_PREFIX": os.environ["CACHE_KEY_PREFIX"],
+  })
+else:
+  config.update({
+    "CACHE_TYPE": "NullCache",
+  })
 app = Flask(__name__)
 app.config.from_mapping(config)
 cache = Cache(app)
@@ -27,7 +35,7 @@ app.logger.setLevel("INFO")
 shutdown = False
 
 @app.route("/", methods=["GET"])
-@cache.cached(timeout=10, query_string=True)
+@cache.cached(timeout=CACHE_TIMEOUT, query_string=True)
 def scrape_route():
   url = request.args.get("url")
   app.logger.info(f"Scraping URL {url}")
@@ -40,6 +48,8 @@ def scrape_route():
       data = scrape_me(url, wild_mode=True)
       return data.to_json()
     except Exception as e2:
+      if not PPLX_API_KEY:
+        return (getattr(e2, 'message', str(e2)), 500)
       app.logger.error(f"scrape_me wild_mode did not work on URL {url}, trying AI: {str(e2)}")
       try:
         headers = {
@@ -48,7 +58,7 @@ def scrape_route():
           "authorization": f"Bearer {PPLX_API_KEY}"
         }
         payload = {
-          "model": "sonar-small-online",
+          "model": "llama-3.1-sonar-small-128k-online",
           "messages": [
             {
               "role": "system",

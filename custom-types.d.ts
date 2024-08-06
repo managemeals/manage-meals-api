@@ -58,6 +58,8 @@ declare module "fastify" {
       PAYPAL_API_URL: string;
       PREMIUM_PRICE_PENNIES: number;
       EMAIL_VERIFY_ENABLED: boolean;
+      PROCESS_USER_POST_REGISTER: boolean;
+      PROCESS_IMAGE_POST_IMPORT: boolean;
     };
 
     mailer: Transporter;
