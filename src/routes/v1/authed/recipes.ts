@@ -249,7 +249,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         throw new Error("Error importing recipe");
       }
 
-      if (recipeJson.image) {
+      if (recipeJson.image && fastify.config.PROCESS_IMAGE_POST_IMPORT) {
         fastify.amqp.channel.sendToQueue(
           "recipe_image",
           Buffer.from(
@@ -456,6 +456,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
     "/:slug/image/file",
     { schema: { params: TSlug } },
     async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      if (!fastify.config.S3_KEY) {
+        throw new Error("S3 is not enabled");
+      }
+
       const { slug } = request.params;
 
       let recipe: IRecipe | null;
@@ -497,7 +501,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         await fastify.s3.send(
           new PutObjectCommand({
             ACL: "public-read",
-            Bucket: process.env.S3_BUCKET,
+            Bucket: fastify.config.S3_BUCKET,
             Key: filename,
             Body: buffer,
             ContentType: file?.mimetype || "image/png",
@@ -532,6 +536,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
     "/:slug/image/url",
     { schema: { body: TUrl, params: TSlug } },
     async (request: FastifyRequest<{ Body: IUrl; Params: ISlug }>, reply) => {
+      if (!fastify.config.S3_KEY) {
+        throw new Error("S3 is not enabled");
+      }
+
       const { url } = request.body;
       const { slug } = request.params;
 
@@ -568,7 +576,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         await fastify.s3.send(
           new PutObjectCommand({
             ACL: "public-read",
-            Bucket: process.env.S3_BUCKET,
+            Bucket: fastify.config.S3_BUCKET,
             Key: filename,
             Body: imgRes.data,
             ContentType: contentType,

@@ -14,6 +14,10 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
     .collection<IDbUser>("users");
 
   fastify.post("/", async (request, reply) => {
+    if (!fastify.config.GOCARDLESS_ACCESS_TOKEN) {
+      throw new Error("Subscriptions are not set up");
+    }
+
     if (request.user?.gcSubscriptionId) {
       fastify.log.error(
         `User ${request.user?.email} already has a subscription`
@@ -79,6 +83,10 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
     "/mandate",
     { schema: { response: { 200: TAuthorisationUrl } } },
     async (request, reply) => {
+      if (!fastify.config.GOCARDLESS_ACCESS_TOKEN) {
+        throw new Error("Subscriptions are not set up");
+      }
+
       if (request.user?.gcDdMandateId) {
         fastify.log.error(
           `User ${request.user.email} already has a GC mandate`
@@ -123,7 +131,10 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
   );
 
   fastify.post("/cancel", async (request, reply) => {
-    if (request.user?.gcSubscriptionId) {
+    if (
+      request.user?.gcSubscriptionId &&
+      fastify.config.GOCARDLESS_ACCESS_TOKEN
+    ) {
       try {
         await fastify.gocardless.subscriptions.cancel(
           request.user.gcSubscriptionId
@@ -134,7 +145,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
       }
     }
 
-    if (request.user?.ppSubscriptionId) {
+    if (request.user?.ppSubscriptionId && fastify.config.PAYPAL_APP_CLIENT_ID) {
       let payPalToken = "";
       try {
         const res = await fastify.axios.post(
@@ -205,7 +216,10 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
     async (request, reply) => {
       let upcomingPayments: ISubscriptionUpcomingPayment[] = [];
 
-      if (request.user?.gcSubscriptionId) {
+      if (
+        request.user?.gcSubscriptionId &&
+        fastify.config.GOCARDLESS_ACCESS_TOKEN
+      ) {
         try {
           const subscription: any = await fastify.gocardless.subscriptions.find(
             request.user.gcSubscriptionId
@@ -221,7 +235,10 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
         }
       }
 
-      if (request.user?.ppSubscriptionId) {
+      if (
+        request.user?.ppSubscriptionId &&
+        fastify.config.PAYPAL_APP_CLIENT_ID
+      ) {
         let payPalToken = "";
         try {
           const res = await fastify.axios.post(
@@ -278,6 +295,10 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
       },
     },
     async (request: FastifyRequest<{ Body: IPayPal }>, reply) => {
+      if (!fastify.config.PAYPAL_APP_CLIENT_ID) {
+        throw new Error("Subscriptions are not set up");
+      }
+
       const { subscriptionId } = request.body;
 
       let payPalToken = "";

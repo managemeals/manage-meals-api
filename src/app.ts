@@ -53,10 +53,16 @@ const app = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(bcrypt);
   await fastify.register(jwt);
   await fastify.register(slugify);
-  await fastify.register(s3);
-  await fastify.register(amqp);
+  if (fastify.config.S3_KEY) {
+    await fastify.register(s3);
+  }
+  if (fastify.config.RABBITMQ_URL) {
+    await fastify.register(amqp);
+  }
   await fastify.register(typesense);
-  await fastify.register(gocardless);
+  if (fastify.config.GOCARDLESS_ACCESS_TOKEN) {
+    await fastify.register(gocardless);
+  }
   await fastify.register(multipart);
   await fastify.register(axios);
   await fastify.register(globalconfig);

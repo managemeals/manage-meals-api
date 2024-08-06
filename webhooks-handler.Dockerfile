@@ -4,7 +4,7 @@ WORKDIR /app/webhooks
 
 COPY ["./webhooks/package.json", "./webhooks/package-lock.json*", "./"]
 
-RUN npm install
+RUN npm ci
 
 COPY webhooks /app/webhooks
 

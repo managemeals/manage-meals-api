@@ -4,7 +4,7 @@ import fastifyPlugin from "fastify-plugin";
 
 const envSchema = {
   type: "object",
-  required: ["MONGO_URL", "MONGO_DB", "REDIS_URL"],
+  required: [],
   properties: {
     MONGO_URL: {
       type: "string",
@@ -36,6 +36,7 @@ const envSchema = {
     },
     BCRYPT_SALT_ROUNDS: {
       type: "number",
+      default: 10,
     },
     EMAIL_VERIFY_JWT_SECRET: {
       type: "string",
@@ -45,6 +46,7 @@ const envSchema = {
     },
     APP_URL: {
       type: "string",
+      default: "http://localhost:3000",
     },
     ACCESS_JWT_SECRET: {
       type: "string",
@@ -66,12 +68,14 @@ const envSchema = {
     },
     ITEMS_PER_PAGE: {
       type: "number",
+      default: 20,
     },
     RECIPE_SCRAPER_URL: {
       type: "string",
     },
     INFRA_ENDPOINT_KEY: {
       type: "string",
+      default: "secret",
     },
     S3_KEY: {
       type: "string",
@@ -126,9 +130,12 @@ const envSchema = {
     },
     DEFAULT_RECIPE_IMG: {
       type: "string",
+      default:
+        "https://whatacdn.fra1.cdn.digitaloceanspaces.com/mmeals/images/default1.jpg",
     },
     MAX_FILE_SIZE_BYTES: {
       type: "number",
+      default: 10485760,
     },
     PAYPAL_APP_CLIENT_ID: {
       type: "string",
@@ -144,6 +151,15 @@ const envSchema = {
     },
     EMAIL_VERIFY_ENABLED: {
       type: "boolean",
+      default: false,
+    },
+    PROCESS_USER_POST_REGISTER: {
+      type: "boolean",
+      default: false,
+    },
+    PROCESS_IMAGE_POST_IMPORT: {
+      type: "boolean",
+      default: false,
     },
   },
 };
@@ -151,10 +167,13 @@ const envSchema = {
 const envOptions = {
   confKey: "config",
   schema: envSchema,
-  dotenv: {
-    path: process.env.APP_ENV === "production" ? ".env" : ".env.local",
-    debug: process.env.APP_ENV !== "production",
-  },
+  // dotenv:
+  //   process.env.DOTENV_ENABLED === "true"
+  //     ? {
+  //         path: process.env.APP_ENV === "production" ? ".env" : ".env.local",
+  //         debug: process.env.APP_ENV !== "production",
+  //       }
+  //     : false,
 };
 
 const env = async (fastify: FastifyInstance, options: Object) => {

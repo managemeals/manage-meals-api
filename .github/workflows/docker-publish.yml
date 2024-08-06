@@ -1,0 +1,47 @@
+name: Build and Push Docker Images
+
+on:
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: managemeals/manage-meals-api
+            dockerfile: Dockerfile
+          - image: managemeals/manage-meals-scraper
+            dockerfile: scraper.Dockerfile
+          - image: managemeals/manage-meals-consumer
+            dockerfile: consumer.Dockerfile
+          - image: managemeals/manage-meals-search-sync
+            dockerfile: search-sync.Dockerfile
+          - image: managemeals/manage-meals-webhooks-handler
+            dockerfile: webhooks-handler.Dockerfile
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ${{ matrix.dockerfile }}
+        push: true
+        tags: ${{ matrix.image }}:latest

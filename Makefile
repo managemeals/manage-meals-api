@@ -37,7 +37,7 @@ restart-infra: stop-infra build-infra up-infra
 .PHONY: recreate-infra
 recreate-infra: clean-infra build-infra up-infra
 
-# everything
+# infra and app
 .PHONY: build-app
 build-app:
 	docker compose \
@@ -91,3 +91,48 @@ restartd-app: stop-app build-app upd-app
 
 .PHONY: recreate-app
 recreate-app: clean-app build-app up-app
+
+# self hosted
+.PHONY: build-selfhost
+build-selfhost:
+	docker compose \
+	-f docker-compose.selfhost.yaml \
+	-f docker-compose.selfhost.override.yaml \
+	build
+
+.PHONY: up-selfhost
+up-selfhost:
+	docker compose \
+	-f docker-compose.selfhost.yaml \
+	-f docker-compose.selfhost.override.yaml \
+	up
+
+.PHONY: upd-selfhost
+upd-selfhost:
+	docker compose \
+	-f docker-compose.selfhost.yaml \
+	-f docker-compose.selfhost.override.yaml \
+	up -d
+
+.PHONY: stop-selfhost
+stop-selfhost:
+	docker compose \
+	-f docker-compose.selfhost.yaml \
+	-f docker-compose.selfhost.override.yaml \
+	stop
+
+.PHONY: clean-selfhost
+clean-selfhost:
+	docker compose \
+	-f docker-compose.selfhost.yaml \
+	-f docker-compose.selfhost.override.yaml \
+	down -v
+
+.PHONY: restart-selfhost
+restart-selfhost: stop-selfhost build-selfhost up-selfhost
+
+.PHONY: restartd-selfhost
+restartd-selfhost: stop-selfhost build-selfhost upd-selfhost
+
+.PHONY: recreate-selfhost
+recreate-selfhost: clean-selfhost build-selfhost up-selfhost

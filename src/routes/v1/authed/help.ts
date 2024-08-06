@@ -8,17 +8,19 @@ const help = async (fastify: FastifyInstance, options: Object) => {
     async (request: FastifyRequest<{ Body: IContact }>, reply) => {
       const { subject, message } = request.body;
 
-      fastify.amqp.channel.sendToQueue(
-        "email",
-        Buffer.from(
-          JSON.stringify({
-            to: fastify.config.HELP_CONTACT_EMAIL,
-            from: fastify.config.SMTP_DEFAULT_FROM,
-            subject: `Help - ${subject}`,
-            html: `<strong>From</strong>: ${request.user?.email}<br/><strong>Message</strong>: ${message}`,
-          })
-        )
-      );
+      if (fastify.config.SMTP_DEFAULT_FROM) {
+        fastify.amqp.channel.sendToQueue(
+          "email",
+          Buffer.from(
+            JSON.stringify({
+              to: fastify.config.HELP_CONTACT_EMAIL,
+              from: fastify.config.SMTP_DEFAULT_FROM,
+              subject: `Help - ${subject}`,
+              html: `<strong>From</strong>: ${request.user?.email}<br/><strong>Message</strong>: ${message}`,
+            })
+          )
+        );
+      }
 
       return {};
     }
