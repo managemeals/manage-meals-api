@@ -14,7 +14,7 @@ services:
       AUTH_ACCESS_TOKEN_EXPIRE_SEC: 600
       AUTH_REFRESH_TOKEN_EXPIRE_SEC: 2629746
       RECIPE_SCRAPER_URL: http://recipe-scraper:8000
-      USER_REGISTER_ENABLED: true
+      USER_REGISTER_ENABLED: 'true'
     depends_on:
       - mongo
       - redis
@@ -55,7 +55,7 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: secret
       ME_CONFIG_MONGODB_URL: mongodb://root:secret@mongo:27017/
-      ME_CONFIG_BASICAUTH: false
+      ME_CONFIG_BASICAUTH: 'false'
       ME_CONFIG_BASICAUTH_USERNAME: ""
       ME_CONFIG_BASICAUTH_PASSWORD: ""
     depends_on:
