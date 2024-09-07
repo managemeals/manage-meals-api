@@ -69,8 +69,6 @@ npm run dev
 
 ### Queue
 
-#### Local development
-
 Comment out the consumer in the `docker-compose.infra.yaml` and run this:
 
 ```sh
@@ -78,8 +76,6 @@ eval $(cat ../.env) node consumer.js
 ```
 
 ### Search
-
-#### Local development
 
 Comment out the sync in the `docker-compose.infra.yaml` and run this:
 
@@ -89,8 +85,6 @@ eval $(cat ../.env) node sync.js
 
 ### Webhooks
 
-#### Local development
-
 Comment out the handler in the `docker-compose.infra.yaml` and run this:
 
 ```sh
@@ -99,7 +93,7 @@ eval $(cat ../.env) node handler.js
 
 ### Scraper
 
-#### Local development
+#### Docker
 
 ```sh
 docker build -f scraper.Dockerfile -t scraper . && docker run -p 8000:8000 \
@@ -111,6 +105,20 @@ docker build -f scraper.Dockerfile -t scraper . && docker run -p 8000:8000 \
 	-e PPLX_API_KEY='secret' \
 	-e DEFAULT_RECIPE_IMG="https://example.com" \
 	scraper
+```
+
+#### Local
+
+```sh
+python -m venv venv
+
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+flask run
+
+deactivate
 ```
 
 ## Production

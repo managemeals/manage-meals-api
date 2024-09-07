@@ -1,5 +1,5 @@
 from flask import Flask, request
-from recipe_scrapers import scrape_me
+from recipe_scrapers import scrape_html
 from flask_caching import Cache
 import os
 import requests
@@ -38,19 +38,25 @@ shutdown = False
 @cache.cached(timeout=CACHE_TIMEOUT, query_string=True)
 def scrape_route():
   url = request.args.get("url")
+  html = requests.get(url).content
   app.logger.info(f"Scraping URL {url}")
+  ai_res_json = None
   try:
-    data = scrape_me(url)
+    data = scrape_html(html, org_url=url)
+    if not data.title():
+      raise Exception("Recipe has no title")
     return data.to_json()
   except Exception as e1:
-    app.logger.error(f"scrape_me normal mode did not work on URL {url}, trying wild_mode: {str(e1)}")
+    app.logger.error(f"scrape_html normal mode did not work on URL {url}, trying wild_mode: {str(e1)}")
     try:
-      data = scrape_me(url, wild_mode=True)
+      data = scrape_html(html, org_url=url, wild_mode=True)
+      if not data.title():
+        raise Exception("Recipe has no title in wild_mode")
       return data.to_json()
     except Exception as e2:
       if not PPLX_API_KEY:
         return (getattr(e2, 'message', str(e2)), 500)
-      app.logger.error(f"scrape_me wild_mode did not work on URL {url}, trying AI: {str(e2)}")
+      app.logger.error(f"scrape_html wild_mode did not work on URL {url}, trying AI: {str(e2)}")
       try:
         headers = {
           "accept": "application/json",
@@ -75,11 +81,11 @@ def scrape_route():
           json=payload,
           headers=headers,
         )
-        res_json = res.json()
-        if not "id" in res_json or not "choices" in res_json or not len(res_json["choices"]) or not "message" in res_json["choices"][0]:
-          app.logger.error(str(res_json))
+        ai_res_json = res.json()
+        if not "id" in ai_res_json or not "choices" in ai_res_json or not len(ai_res_json["choices"]) or not "message" in ai_res_json["choices"][0]:
+          app.logger.error(str(ai_res_json))
           raise Exception("Invalid JSON from AI")
-        msg_content = res_json["choices"][0]["message"]["content"]
+        msg_content = ai_res_json["choices"][0]["message"]["content"]
         msg_content = msg_content[msg_content.find('{'):msg_content.rfind('}') + 1]
         msg_content_json = json.loads(msg_content)
         if isinstance(msg_content_json["ingredients"], str):
@@ -88,7 +94,7 @@ def scrape_route():
           msg_content_json["ingredients"] = [" ".join(ingredient.values()) for ingredient in msg_content_json["ingredients"]]
         if isinstance(msg_content_json["instructions"], str):
           msg_content_json["instructions"] = [msg_content_json["instructions"]]
-        scrape_me_json = {
+        scrape_html_json = {
           "canonical_url": url,
           "description": msg_content_json["description"],
           "host": urlparse(url).netloc,
@@ -104,9 +110,9 @@ def scrape_route():
           "instructions_list": msg_content_json["instructions"],
           "title": msg_content_json["title"],
         }
-        return scrape_me_json
+        return scrape_html_json
       except Exception as e3:
-        app.logger.error(f"AI did not work on URL {url}: {str(e3)}")
+        app.logger.error(f"AI did not work on URL {url}: {str(e3)}, got {ai_res_json}")
         return (getattr(e3, 'message', str(e3)), 500)
 
 @app.route("/health", methods=["GET"])
