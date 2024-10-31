@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 PPLX_API_KEY = os.environ.get("PPLX_API_KEY", "")
 DEFAULT_RECIPE_IMG = os.environ.get("DEFAULT_RECIPE_IMG", "https://whatacdn.fra1.cdn.digitaloceanspaces.com/mmeals/images/default1.jpg")
 CACHE_TIMEOUT = int(os.environ.get("SCRAPER_CACHE_TIMEOUT", 10))
+PROXY_URL = os.environ.get("SCRAPER_PROXY_URL", "")
 
 config = {
   "DEBUG": False,
@@ -37,8 +38,21 @@ shutdown = False
 @app.route("/", methods=["GET"])
 @cache.cached(timeout=CACHE_TIMEOUT, query_string=True)
 def scrape_route():
+  proxies=None
+  if PROXY_URL:
+      proxies = {
+        'http': PROXY_URL,
+        'https': PROXY_URL
+      }
   url = request.args.get("url")
-  html = requests.get(url).content
+  html = requests.get(
+    url,
+    headers={
+      "User-Agent": "ManageMeals (https://managemeals.com/)",
+    },
+    timeout=60,
+    proxies=proxies
+  ).content
   app.logger.info(f"Scraping URL {url}")
   ai_res_json = None
   try:
