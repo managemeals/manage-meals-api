@@ -4,16 +4,17 @@ db.users.createIndex({ email: 1 }, { unique: true });
 
 db.createCollection("recipes");
 db.recipes.createIndex({ uuid: 1 }, { unique: true });
-db.recipes.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
-db.recipes.createIndex({ uuid: 1, createdByUuid: 1 });
+db.recipes.createIndex({ slug: 1 }, { unique: true });
+db.recipes.createIndex({ createdByUuid: 1, slug: 1 }, { unique: true });
+db.recipes.createIndex({ createdByUuid: 1, uuid: 1 });
 
 db.createCollection("tags");
 db.tags.createIndex({ uuid: 1 }, { unique: true });
-db.tags.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
+db.tags.createIndex({ createdByUuid: 1, slug: 1 }, { unique: true });
 
 db.createCollection("categories");
 db.categories.createIndex({ uuid: 1 }, { unique: true });
-db.categories.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
+db.categories.createIndex({ createdByUuid: 1, slug: 1 }, { unique: true });
 
 db.createCollection("mealplans");
 db.mealplans.createIndex({ uuid: 1 }, { unique: true });
