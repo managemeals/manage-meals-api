@@ -299,6 +299,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
                 },
                 {
                     $match: {
+                        "recipe.data.canonical_url": {
+                            $exists: true,
+                            $ne: "",
+                        },
                         count: {
                             $gt: 1,
                         },
