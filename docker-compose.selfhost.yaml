@@ -1,98 +1,98 @@
 services:
-  manage-meals-api:
-    image: ghcr.io/managemeals/manage-meals-api:latest
-    restart: unless-stopped
-    environment:
-      MONGO_URL: mongodb://root:secret@mongo:27017/
-      MONGO_DB: manage_meals
-      REDIS_URL: redis://redis:6379
-      TYPESENSE_API_KEY: secret
-      TYPESENSE_HOST: typesense
-      TYPESENSE_PORT: 8108
-      ACCESS_JWT_SECRET: secret
-      REFRESH_JWT_SECRET: secret
-      AUTH_ACCESS_TOKEN_EXPIRE_SEC: 600
-      AUTH_REFRESH_TOKEN_EXPIRE_SEC: 2629746
-      RECIPE_SCRAPER_URL: http://recipe-scraper:8000
-      USER_REGISTER_ENABLED: 'true'
-    depends_on:
-      - mongo
-      - redis
-      - recipe-scraper
-      - typesense
-      - search-sync
+    manage-meals-api:
+        image: ghcr.io/managemeals/manage-meals-api:latest
+        restart: unless-stopped
+        environment:
+            MONGO_URL: mongodb://root:secret@mongo:27017/
+            MONGO_DB: manage_meals
+            REDIS_URL: redis://redis:6379
+            TYPESENSE_API_KEY: secret
+            TYPESENSE_HOST: typesense
+            TYPESENSE_PORT: 8108
+            ACCESS_JWT_SECRET: secret
+            REFRESH_JWT_SECRET: secret
+            AUTH_ACCESS_TOKEN_EXPIRE_SEC: 600
+            AUTH_REFRESH_TOKEN_EXPIRE_SEC: 2629746
+            RECIPE_SCRAPER_URL: http://recipe-scraper:8000
+            USER_REGISTER_ENABLED: "true"
+        depends_on:
+            - mongo
+            - redis
+            - recipe-scraper
+            - typesense
+            - search-sync
 
-  manage-meals-web:
-    image: ghcr.io/managemeals/manage-meals-web:latest
-    restart: unless-stopped
-    environment:
-      PUBLIC_MAIN_TITLE: ManageMeals
-      PASSWORD_MIN_LENGTH: 6
-      API_URL: http://manage-meals-api:3000/v1
-      COOKIE_ACCESS_TOKEN: mmeals_access_token
-      COOKIE_REFRESH_TOKEN: mmeals_refresh_token
-      COOKIE_ACCESS_TOKEN_EXPIRE_SEC: 600
-      COOKIE_REFRESH_TOKEN_EXPIRE_SEC: 2629746
-      ORIGIN: http://localhost:3001
-      BODY_SIZE_LIMIT: Infinity
-    depends_on:
-      - manage-meals-api
+    manage-meals-web:
+        image: ghcr.io/managemeals/manage-meals-web:latest
+        restart: unless-stopped
+        environment:
+            PUBLIC_MAIN_TITLE: ManageMeals
+            PASSWORD_MIN_LENGTH: 6
+            API_URL: http://manage-meals-api:3000/v1
+            COOKIE_ACCESS_TOKEN: mmeals_access_token
+            COOKIE_REFRESH_TOKEN: mmeals_refresh_token
+            COOKIE_ACCESS_TOKEN_EXPIRE_SEC: 600
+            COOKIE_REFRESH_TOKEN_EXPIRE_SEC: 2629746
+            ORIGIN: http://localhost:3001
+            BODY_SIZE_LIMIT: Infinity
+        depends_on:
+            - manage-meals-api
 
-  mongo:
-    image: mongo:7
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: secret
-      MONGO_INITDB_DATABASE: manage_meals
-    volumes:
-      - mongo-data:/data/db
+    mongo:
+        image: mongo:7
+        restart: unless-stopped
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: root
+            MONGO_INITDB_ROOT_PASSWORD: secret
+            MONGO_INITDB_DATABASE: manage_meals
+        volumes:
+            - mongo-data:/data/db
 
-  mongo-express:
-    image: mongo-express
-    restart: unless-stopped
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://root:secret@mongo:27017/
-      ME_CONFIG_BASICAUTH: 'false'
-      ME_CONFIG_BASICAUTH_USERNAME: ""
-      ME_CONFIG_BASICAUTH_PASSWORD: ""
-    depends_on:
-      - mongo
+    mongo-express:
+        image: mongo-express
+        restart: unless-stopped
+        environment:
+            ME_CONFIG_MONGODB_ADMINUSERNAME: root
+            ME_CONFIG_MONGODB_ADMINPASSWORD: secret
+            ME_CONFIG_MONGODB_URL: mongodb://root:secret@mongo:27017/
+            ME_CONFIG_BASICAUTH: "false"
+            ME_CONFIG_BASICAUTH_USERNAME: ""
+            ME_CONFIG_BASICAUTH_PASSWORD: ""
+        depends_on:
+            - mongo
 
-  redis:
-    image: redis:7
-    restart: unless-stopped
+    redis:
+        image: redis:7
+        restart: unless-stopped
 
-  recipe-scraper:
-    image: ghcr.io/managemeals/manage-meals-scraper:latest
-    restart: unless-stopped
+    recipe-scraper:
+        image: ghcr.io/managemeals/manage-meals-scraper:latest
+        restart: unless-stopped
 
-  typesense:
-    image: typesense/typesense:0.25.2
-    restart: unless-stopped
-    environment:
-      TYPESENSE_DATA_DIR: /data
-      TYPESENSE_API_KEY: secret
-      TYPESENSE_HOST: typesense
-      TYPESENSE_PORT: 8108
-    volumes:
-      - typesense-data:/data
+    typesense:
+        image: typesense/typesense:0.25.2
+        restart: unless-stopped
+        environment:
+            TYPESENSE_DATA_DIR: /data
+            TYPESENSE_API_KEY: secret
+            TYPESENSE_HOST: typesense
+            TYPESENSE_PORT: 8108
+        volumes:
+            - typesense-data:/data
 
-  search-sync:
-    image: ghcr.io/managemeals/manage-meals-search-sync:latest
-    restart: unless-stopped
-    environment:
-      MONGO_URL: mongodb://root:secret@mongo:27017/
-      MONGO_DB: manage_meals
-      TYPESENSE_API_KEY: secret
-      TYPESENSE_HOST: typesense
-      TYPESENSE_PORT: 8108
-    depends_on:
-      - mongo
-      - typesense
+    search-sync:
+        image: ghcr.io/managemeals/manage-meals-search-sync:latest
+        restart: unless-stopped
+        environment:
+            MONGO_URL: mongodb://root:secret@mongo:27017/
+            MONGO_DB: manage_meals
+            TYPESENSE_API_KEY: secret
+            TYPESENSE_HOST: typesense
+            TYPESENSE_PORT: 8108
+        depends_on:
+            - mongo
+            - typesense
 
 volumes:
-  mongo-data:
-  typesense-data:
+    mongo-data:
+    typesense-data:
