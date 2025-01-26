@@ -9,3 +9,4 @@ docker-compose.override.yaml
 docker-compose.*.override.yaml
 **/venv
 **/__pycache__
+.ropeproject

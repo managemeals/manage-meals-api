@@ -15,8 +15,13 @@ import {
     TRegister,
     IRegister,
     TUUID,
-    GoogleUserInfo,
+    IGoogleUserInfo,
+    IOauthTokenRes,
+    TState,
+    IState,
+    IAccessRefresh,
 } from "../../../types.js";
+import { generatePassword } from "../../../utils/crypto.js";
 
 const auth = async (fastify: FastifyInstance, options: Object) => {
     const usersDbCollection = fastify.mongo.client
@@ -398,38 +403,148 @@ const auth = async (fastify: FastifyInstance, options: Object) => {
         },
     );
 
-    // TODO: Wait for Google to approve app
-    // fastify.get(
-    //     "/oauth/google/callback",
-    //     {},
-    //     async (request: FastifyRequest, reply) => {
-    //         // Use token to get user info from Google API
-    //         let userInfo: GoogleUserInfo;
-    //         try {
-    //             const token =
-    //                 await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(
-    //                     request,
-    //                 );
+    fastify.post(
+        "/oauth/exchange-token",
+        { schema: { body: TState } },
+        async (request: FastifyRequest<{ Body: IState }>, reply) => {
+            const { state } = request.body;
 
-    //             const res = await fastify.axios.get(
-    //                 "https://www.googleapis.com/oauth2/v2/userinfo",
-    //                 {
-    //                     headers: {
-    //                         Accept: "application/json",
-    //                         "Content-Type": "application/json",
-    //                         Authorization: `Bearer ${token}`,
-    //                     },
-    //                 },
-    //             );
-    //             userInfo = res.data as GoogleUserInfo;
-    //         } catch (e) {
-    //             fastify.log.error(e);
-    //             throw new Error("Error handling Google OAuth2 callback");
-    //         }
+            let tokens: IAccessRefresh | null;
+            try {
+                const cacheVal = await fastify.redis.get(state);
+                if (!cacheVal) {
+                    throw new Error("State not found in cache");
+                }
+                tokens = JSON.parse(cacheVal);
+                await fastify.redis.del(state);
+            } catch (e) {
+                fastify.log.error(e);
+                throw new Error("Error exchanging state for tokens");
+            }
 
-    //         return {};
-    //     },
-    // );
+            if (!tokens) {
+                throw new Error("Error exchanging state for tokens");
+            }
+
+            return tokens;
+        },
+    );
+
+    fastify.get(
+        "/oauth/google/callback",
+        {},
+        async (request: FastifyRequest, reply) => {
+            // Use token to get user info from Google API
+            let userInfo: IGoogleUserInfo;
+            try {
+                const { token } =
+                    (await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(
+                        request,
+                    )) as IOauthTokenRes;
+
+                const res = await fastify.axios.get(
+                    "https://www.googleapis.com/oauth2/v2/userinfo",
+                    {
+                        headers: {
+                            Accept: "application/json",
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token.access_token}`,
+                        },
+                    },
+                );
+                userInfo = res.data as IGoogleUserInfo;
+            } catch (e) {
+                fastify.log.error(e);
+                throw new Error("Error handling Google OAuth2 callback");
+            }
+
+            // Check if user exists
+            let user: IDbUser | null;
+            try {
+                user = await usersDbCollection.findOne<IDbUser>({
+                    email: userInfo.email,
+                });
+            } catch (e) {
+                fastify.log.error(e);
+                throw new Error("Error handling Google OAuth2 callback");
+            }
+
+            // If user didn't exist, create one
+            if (!user) {
+                const hash = await fastify.bcrypt.hash(generatePassword(42));
+                const uuid = crypto.randomUUID();
+
+                user = {
+                    uuid,
+                    name: userInfo.name,
+                    email: userInfo.email,
+                    password: hash,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    emailVerified: true,
+                    isAdmin: false,
+                    isBanned: false,
+                    subscriptionType: "FREE",
+                };
+
+                try {
+                    await usersDbCollection.insertOne(user);
+                } catch (e) {
+                    fastify.log.error(e);
+                    throw new Error("Error handling Google OAuth2 callback");
+                }
+
+                if (fastify.config.PROCESS_USER_POST_REGISTER) {
+                    fastify.amqp.channel.sendToQueue(
+                        "user_register",
+                        Buffer.from(
+                            JSON.stringify({
+                                uuid,
+                            }),
+                        ),
+                    );
+                }
+            }
+
+            if (user.isBanned) {
+                fastify.log.error(`User ${user.email} is banned`);
+                reply.code(403);
+                throw new Error("User is banned");
+            }
+
+            // Generate tokens and store in cache
+            const accessToken = fastify.jwt.sign(
+                { uuid: user.uuid },
+                fastify.config.ACCESS_JWT_SECRET,
+                { expiresIn: fastify.config.AUTH_ACCESS_TOKEN_EXPIRE_SEC },
+            );
+            const refreshToken = fastify.jwt.sign(
+                { uuid: user.uuid },
+                fastify.config.REFRESH_JWT_SECRET,
+                { expiresIn: fastify.config.AUTH_REFRESH_TOKEN_EXPIRE_SEC },
+            );
+
+            const cacheKey = `oauth_${crypto.randomUUID()}`;
+            try {
+                await fastify.redis.set(
+                    cacheKey,
+                    JSON.stringify({
+                        accessToken,
+                        refreshToken,
+                    }),
+                    "EX",
+                    300, // 5 minutes
+                );
+            } catch (e) {
+                fastify.log.error(e);
+                throw new Error("Error handling Google OAuth2 callback");
+            }
+
+            return reply.redirect(
+                `${fastify.config.OAUTH_FRONTEND_CALLBACK_URL}?state=${cacheKey}`,
+            );
+        },
+    );
 
     // fastify.get(
     //     "/oauth/facebook/callback",

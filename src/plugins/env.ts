@@ -183,6 +183,9 @@ const envSchema = {
         OAUTH_FACEBOOK_CALLBACK_URI: {
             type: "string",
         },
+        OAUTH_FRONTEND_CALLBACK_URL: {
+            type: "string",
+        },
         MULTIPLE_MOCK_USERS: {
             type: "boolean",
             default: false,

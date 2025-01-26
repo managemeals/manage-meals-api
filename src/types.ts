@@ -106,6 +106,12 @@ export const TToken = Type.Object({
 
 export type IToken = Static<typeof TToken>;
 
+export const TState = Type.Object({
+    state: Type.String(),
+});
+
+export type IState = Static<typeof TState>;
+
 export const TCategory = Type.Object({
     uuid: Type.Optional(Type.String()),
     slug: Type.Optional(Type.String()),
@@ -410,7 +416,7 @@ export const TPayPal = Type.Object({
 
 export type IPayPal = Static<typeof TPayPal>;
 
-export interface GoogleUserInfo {
+export interface IGoogleUserInfo {
     id: string;
     email: string;
     verified_email: boolean;
@@ -418,6 +424,18 @@ export interface GoogleUserInfo {
     given_name: string;
     family_name: string;
     picture: string;
+}
+
+export interface IOauthToken {
+    access_token: string;
+    expires_in: number;
+    scope: string;
+    token_type: string;
+    id_token: string;
+}
+
+export interface IOauthTokenRes {
+    token: IOauthToken;
 }
 
 export const TPopularRecipe = Type.Object({
