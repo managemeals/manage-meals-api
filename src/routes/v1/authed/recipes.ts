@@ -377,6 +377,48 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
     );
 
     fastify.get(
+        "/random",
+        {
+            schema: {
+                response: { 200: TRecipe },
+            },
+        },
+        async (request, reply) => {
+            const pipeline = [
+                {
+                    $match: {
+                        createdByUuid: request.user?.uuid,
+                    },
+                },
+                {
+                    $sample: {
+                        size: 1,
+                    },
+                },
+            ];
+
+            let recipes: IRecipe[] = [];
+            const cursor = recipesDbCollection.aggregate(pipeline);
+            try {
+                for await (const doc of cursor) {
+                    recipes.push(doc as IRecipe);
+                }
+            } catch (e) {
+                fastify.log.error(e);
+                throw new Error("Error getting random recipe");
+            }
+
+            if (!recipes.length) {
+                fastify.log.error("Random recipe not found");
+                reply.code(404);
+                throw new Error("Error getting random recipe");
+            }
+
+            return recipes[0];
+        },
+    );
+
+    fastify.get(
         "/:slug",
         { schema: { params: TSlug, response: { 200: TRecipe } } },
         async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
