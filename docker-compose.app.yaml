@@ -1,5 +1,5 @@
 services:
-    manage-meals-app-01:
+    manage-meals-app:
         image: ghcr.io/managemeals/manage-meals-api:latest
         restart: unless-stopped
         env_file:
@@ -7,52 +7,11 @@ services:
         depends_on:
             - mongo
             - redis
-            - recipe-scraper-01
-            - recipe-scraper-02
-            - recipe-scraper-lb
+            - recipe-scraper
             - typesense
             - rabbitmq
             - queue-consumer
             - search-sync
             - webhooks-handler
-        networks:
-            - mmeals_net
-
-    manage-meals-app-02:
-        image: ghcr.io/managemeals/manage-meals-api:latest
-        restart: unless-stopped
-        env_file:
-            - ./.env
-        depends_on:
-            - mongo
-            - redis
-            - recipe-scraper-01
-            - recipe-scraper-02
-            - recipe-scraper-lb
-            - typesense
-            - rabbitmq
-            - queue-consumer
-            - search-sync
-            - webhooks-handler
-        networks:
-            - mmeals_net
-
-    manage-meals-app-lb:
-        image: haproxy:2.9
-        restart: unless-stopped
-        sysctls:
-            - net.ipv4.ip_unprivileged_port_start=0
-        depends_on:
-            - manage-meals-app-01
-            - manage-meals-app-02
-        command: >
-            bash -c "/opt/wait-for-it.sh -t 60 manage-meals-app-01:3000 --
-              /opt/wait-for-it.sh -t 60 manage-meals-app-02:3000 --
-              haproxy -f /usr/local/etc/haproxy/haproxy.cfg -W -db"
-        volumes:
-            - ./haproxy-manage-meals-app.cfg:/usr/local/etc/haproxy/haproxy.cfg
-            - ./wait-for-it.sh:/opt/wait-for-it.sh
-        env_file:
-            - ./.env.docker
         networks:
             - mmeals_net

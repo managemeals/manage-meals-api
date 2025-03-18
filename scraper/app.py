@@ -78,11 +78,11 @@ def scrape_route():
           "authorization": f"Bearer {PPLX_API_KEY}"
         }
         payload = {
-          "model": "llama-3.1-sonar-small-128k-online",
+          "model": "sonar",
           "messages": [
             {
               "role": "system",
-              "content": "Extract recipe data, with a single featured image, from URL and return JSON only. The JSON should contain the keys ingredients, instructions, title, description and image. The key ingredients should be a list of strings, the key instructions should be a list of strings, the key title should be a string, the key description should be a string, the key image should be a string."
+              "content": "Extract recipe data, with a single featured image, from a URL and return a JSON string. The JSON should contain the following keys: ingredients, instructions, title, description and image. The key ingredients should be a list of strings, the key instructions should be a list of strings, the key title should be a string, the key description should be a string, the key image should be a string. Do not return any alternatives, only return a JSON string. Do not add any backticks or syntax highlighting, only return the JSON string as is. If no image is found, then set the image field to https://whatacdn.fra1.cdn.digitaloceanspaces.com/mmeals/images/default1.jpg. If nothing is found return a string that only says ERROR."
             },
             {
               "role": "user",
