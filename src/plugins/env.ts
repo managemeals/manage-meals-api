@@ -186,6 +186,10 @@ const envSchema = {
         OAUTH_FRONTEND_CALLBACK_URL: {
             type: "string",
         },
+        OAUTH_ENABLED: {
+            type: "boolean",
+            default: false,
+        },
         MULTIPLE_MOCK_USERS: {
             type: "boolean",
             default: false,

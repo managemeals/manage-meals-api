@@ -67,7 +67,9 @@ const app = async (fastify: FastifyInstance, options: Object) => {
     await fastify.register(multipart);
     await fastify.register(axios);
     await fastify.register(globalconfig);
-    await fastify.register(oauth);
+    if (fastify.config.OAUTH_ENABLED) {
+        await fastify.register(oauth);
+    }
     await fastify.register(infra, { prefix: "/infra" });
     await fastify.register(webhooks, { prefix: "/webhooks" });
     await fastify.register(v1, { prefix: "/v1" });

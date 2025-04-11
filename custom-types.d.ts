@@ -68,6 +68,7 @@ declare module "fastify" {
             OAUTH_FACEBOOK_CLIENT_SECRET: string;
             OAUTH_FACEBOOK_CALLBACK_URI: string;
             OAUTH_FRONTEND_CALLBACK_URL: string;
+            OAUTH_ENABLED: boolean;
             MULTIPLE_MOCK_USERS: boolean;
         };
 

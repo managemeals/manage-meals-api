@@ -37,7 +37,7 @@ services:
             - mmeals_net
 
     typesense:
-        image: typesense/typesense:0.25.2
+        image: typesense/typesense:28.0
         restart: unless-stopped
         volumes:
             - typesense-data:/data
