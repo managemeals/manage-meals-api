@@ -139,8 +139,19 @@ cron.schedule("*/3 * * * *", async () => {
         .documents()
         .import(mappedRecipes, { action: "upsert" });
     } catch (e) {
-      console.log(e);
-      return;
+      if (e.importResults) {
+        e.importResults.forEach((result, i) => {
+          if (!result.success) {
+            const recipe = mappedRecipes[i];
+            console.log(
+              `Failed to import recipe: uuid=${recipe.id}, slug=${recipe.slug}, error=${result.error}`,
+            );
+          }
+        });
+      } else {
+        console.log(e);
+        return;
+      }
     }
     console.log(`Imported ${mappedRecipes.length} recipes`);
   }
@@ -179,7 +190,7 @@ cron.schedule("*/3 * * * *", async () => {
     await syncsDbColl.updateOne(
       { name: "Search" },
       { $set: { lastSyncedAt: new Date() } },
-      { upsert: true }
+      { upsert: true },
     );
   } catch (e) {
     console.log(e);
