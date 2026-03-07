@@ -397,6 +397,38 @@ export interface IDbShoppingList extends Omit<
   updatedAt: Date;
 }
 
+export const TCookbook = Type.Object({
+  uuid: Type.Optional(Type.String()),
+  slug: Type.Optional(Type.String()),
+  createdAt: Type.Optional(Type.String({ format: "date-time" })),
+  updatedAt: Type.Optional(Type.String({ format: "date-time" })),
+  createdByUuid: Type.Optional(Type.String()),
+  title: Type.String(),
+  description: Type.Optional(Type.String()),
+  recipeUuids: Type.Optional(Type.Array(Type.String())),
+  recipes: Type.Optional(Type.Array(TRecipe)),
+});
+
+export const TCookbookPatch = Type.Object({
+  title: Type.Optional(Type.String()),
+  description: Type.Optional(Type.String()),
+  recipeUuids: Type.Optional(Type.Array(Type.String())),
+});
+
+export type ICookbookPatch = Static<typeof TCookbookPatch>;
+
+export const TCookbooks = Type.Array(TCookbook);
+
+export type ICookbook = Static<typeof TCookbook>;
+
+export interface IDbCookbook extends Omit<
+  ICookbook,
+  "createdAt" | "updatedAt"
+> {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export const TAdminStatus = Type.Object({
   totalUsers: Type.Number(),
   totalRecipes: Type.Number(),

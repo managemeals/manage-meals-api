@@ -43,6 +43,13 @@ db.shoppinglists.createIndex({ uuid: 1 }, { unique: true });
 db.shoppinglists.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
 
 try {
+  db.createCollection("cookbooks");
+} catch {}
+db.cookbooks.createIndex({ uuid: 1 }, { unique: true });
+db.cookbooks.createIndex({ slug: 1, createdByUuid: 1 }, { unique: true });
+db.cookbooks.createIndex({ createdByUuid: 1, createdAt: -1 });
+
+try {
   db.createCollection("sharerecipes");
 } catch {}
 db.sharerecipes.createIndex({ uuid: 1 }, { unique: true });

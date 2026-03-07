@@ -12,6 +12,7 @@ import premium from "./premium/index.js";
 import share from "./share.js";
 import mealPlans from "./meal-plans.js";
 import shoppingLists from "./shopping-lists.js";
+import cookbooks from "./cookbooks.js";
 
 const authed = async (fastify: FastifyInstance, options: Object) => {
   const usersDbCollection = fastify.mongo.client
@@ -89,6 +90,7 @@ const authed = async (fastify: FastifyInstance, options: Object) => {
   await fastify.register(share, { prefix: "/share" });
   await fastify.register(mealPlans, { prefix: "/meal-plans" });
   await fastify.register(shoppingLists, { prefix: "/shopping-lists" });
+  await fastify.register(cookbooks, { prefix: "/cookbooks" });
 };
 
 export default authed;
