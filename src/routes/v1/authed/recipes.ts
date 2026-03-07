@@ -61,6 +61,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         maxCarbs,
         minFat,
         maxFat,
+        favorite,
       } = request.query;
       let skipPage = page ? page - 1 : 0;
       if (skipPage < 0) {
@@ -72,8 +73,13 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       };
 
       const nutrientVal = (field: string) => ({
-        $toDouble: {
-          $arrayElemAt: [{ $split: [`$data.nutrients.${field}`, " "] }, 0],
+        $convert: {
+          input: {
+            $arrayElemAt: [{ $split: [`$data.nutrients.${field}`, " "] }, 0],
+          },
+          to: "double",
+          onError: null,
+          onNull: null,
         },
       });
       const exprConditions: any[] = [];
@@ -131,6 +137,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         }
       }
 
+      if (favorite !== undefined) {
+        matchObj.favorite = favorite;
+      }
+
       let sortObj: any = {
         slug: 1,
       };
@@ -161,11 +171,16 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
             addFieldsStage = {
               $addFields: {
                 _sortVal: {
-                  $toDouble: {
-                    $arrayElemAt: [
-                      { $split: ["$data.nutrients.calories", " "] },
-                      0,
-                    ],
+                  $convert: {
+                    input: {
+                      $arrayElemAt: [
+                        { $split: ["$data.nutrients.calories", " "] },
+                        0,
+                      ],
+                    },
+                    to: "double",
+                    onError: null,
+                    onNull: null,
                   },
                 },
               },
@@ -178,11 +193,16 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
             addFieldsStage = {
               $addFields: {
                 _sortVal: {
-                  $toDouble: {
-                    $arrayElemAt: [
-                      { $split: ["$data.nutrients.proteinContent", " "] },
-                      0,
-                    ],
+                  $convert: {
+                    input: {
+                      $arrayElemAt: [
+                        { $split: ["$data.nutrients.proteinContent", " "] },
+                        0,
+                      ],
+                    },
+                    to: "double",
+                    onError: null,
+                    onNull: null,
                   },
                 },
               },
@@ -195,11 +215,18 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
             addFieldsStage = {
               $addFields: {
                 _sortVal: {
-                  $toDouble: {
-                    $arrayElemAt: [
-                      { $split: ["$data.nutrients.carbohydrateContent", " "] },
-                      0,
-                    ],
+                  $convert: {
+                    input: {
+                      $arrayElemAt: [
+                        {
+                          $split: ["$data.nutrients.carbohydrateContent", " "],
+                        },
+                        0,
+                      ],
+                    },
+                    to: "double",
+                    onError: null,
+                    onNull: null,
                   },
                 },
               },
@@ -212,11 +239,16 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
             addFieldsStage = {
               $addFields: {
                 _sortVal: {
-                  $toDouble: {
-                    $arrayElemAt: [
-                      { $split: ["$data.nutrients.fatContent", " "] },
-                      0,
-                    ],
+                  $convert: {
+                    input: {
+                      $arrayElemAt: [
+                        { $split: ["$data.nutrients.fatContent", " "] },
+                        0,
+                      ],
+                    },
+                    to: "double",
+                    onError: null,
+                    onNull: null,
                   },
                 },
               },
@@ -918,6 +950,56 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return shareRecipes;
+    },
+  );
+
+  fastify.post(
+    "/:slug/favorite",
+    { schema: { params: TSlug } },
+    async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      const { slug } = request.params;
+
+      try {
+        const dbRes = await recipesDbCollection.updateOne(
+          { slug, createdByUuid: request.user?.uuid },
+          { $set: { favorite: true, updatedAt: new Date() } },
+        );
+        if (!dbRes.matchedCount) {
+          fastify.log.error(`Recipe ${slug} not found`);
+          reply.code(404);
+          throw new Error("Error favoriting recipe");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error favoriting recipe");
+      }
+
+      return {};
+    },
+  );
+
+  fastify.delete(
+    "/:slug/favorite",
+    { schema: { params: TSlug } },
+    async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      const { slug } = request.params;
+
+      try {
+        const dbRes = await recipesDbCollection.updateOne(
+          { slug, createdByUuid: request.user?.uuid },
+          { $set: { favorite: false, updatedAt: new Date() } },
+        );
+        if (!dbRes.matchedCount) {
+          fastify.log.error(`Recipe ${slug} not found`);
+          reply.code(404);
+          throw new Error("Error unfavoriting recipe");
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error unfavoriting recipe");
+      }
+
+      return {};
     },
   );
 };

@@ -186,6 +186,7 @@ export const TRecipeFilter = Type.Object({
   maxCarbs: Type.Optional(Type.Number()),
   minFat: Type.Optional(Type.Number()),
   maxFat: Type.Optional(Type.Number()),
+  favorite: Type.Optional(Type.Boolean()),
 });
 
 export type IRecipeFilter = Static<typeof TRecipeFilter>;
@@ -261,6 +262,7 @@ export const TRecipe = Type.Object({
   categories: Type.Optional(Type.Array(TCategory)),
   tags: Type.Optional(Type.Array(TTag)),
   rating: Type.Optional(Type.Number()),
+  favorite: Type.Optional(Type.Boolean()),
   data: Type.Optional(TRecipeData),
   createdBy: Type.Optional(TUser),
 });

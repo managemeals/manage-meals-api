@@ -12,6 +12,7 @@ db.recipes.createIndex({ slug: 1 }, { unique: true });
 db.recipes.createIndex({ createdByUuid: 1, slug: 1 }, { unique: true });
 db.recipes.createIndex({ createdByUuid: 1, tagUuids: 1 });
 db.recipes.createIndex({ createdByUuid: 1, categoryUuids: 1 });
+db.recipes.createIndex({ createdByUuid: 1, favorite: 1 });
 db.recipes.createIndex({ createdByUuid: 1, createdAt: -1 });
 db.recipes.createIndex({ "data.canonical_url": 1 }, { sparse: true });
 
