@@ -46,7 +46,7 @@ const shoppingLists = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return { slug };
-    }
+    },
   );
 
   fastify.put(
@@ -54,7 +54,7 @@ const shoppingLists = async (fastify: FastifyInstance, options: Object) => {
     { schema: { params: TSlug, body: TShoppingList } },
     async (
       request: FastifyRequest<{ Params: ISlug; Body: IShoppingList }>,
-      reply
+      reply,
     ) => {
       const { slug } = request.params;
       const { title, ingredients, recipeUuids } = request.body;
@@ -72,7 +72,7 @@ const shoppingLists = async (fastify: FastifyInstance, options: Object) => {
               ingredients: ingredients || [],
               recipeUuids: recipeUuids || [],
             },
-          }
+          },
         );
         if (!dbRes.matchedCount) {
           fastify.log.error(`Shopping list ${slug} not found`);
@@ -85,7 +85,7 @@ const shoppingLists = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 
   fastify.get(
@@ -125,7 +125,7 @@ const shoppingLists = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return shoppingLists;
-    }
+    },
   );
 
   fastify.get(
@@ -233,7 +233,7 @@ const shoppingLists = async (fastify: FastifyInstance, options: Object) => {
       };
 
       return shoppingList;
-    }
+    },
   );
 
   fastify.delete(
@@ -279,7 +279,7 @@ const shoppingLists = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 };
 

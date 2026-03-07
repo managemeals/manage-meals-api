@@ -17,13 +17,13 @@ const help = async (fastify: FastifyInstance, options: Object) => {
               from: fastify.config.SMTP_DEFAULT_FROM,
               subject: `Help - ${subject}`,
               html: `<strong>From</strong>: ${request.user?.email}<br/><strong>Message</strong>: ${message}`,
-            })
-          )
+            }),
+          ),
         );
       }
 
       return {};
-    }
+    },
   );
 };
 

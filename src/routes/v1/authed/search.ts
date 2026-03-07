@@ -44,7 +44,7 @@ const search = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return results;
-    }
+    },
   );
 };
 

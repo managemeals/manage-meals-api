@@ -66,7 +66,7 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return user;
-    }
+    },
   );
 
   fastify.patch(
@@ -113,7 +113,7 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
           { uuid: request.user?.uuid },
           {
             $set: setObj,
-          }
+          },
         );
       } catch (e) {
         fastify.log.error(e);
@@ -128,7 +128,7 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
         const verifyToken = fastify.jwt.sign(
           { email },
           fastify.config.EMAIL_VERIFY_JWT_SECRET,
-          { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC }
+          { expiresIn: fastify.config.EMAIL_VERIFY_JWT_EXPIRE_SEC },
         );
 
         const appUrl = fastify.config.APP_URL;
@@ -140,13 +140,13 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
               from: fastify.config.SMTP_DEFAULT_FROM,
               subject: "Verify email",
               html: `Hi, please <a href="${appUrl}/auth/email-verify?token=${verifyToken}">click here</a> to verify your email.<br/><br/>Or visit this link: <a href="${appUrl}/auth/email-verify?token=${verifyToken}">${appUrl}/auth/email-verify?token=${verifyToken}</a><br/><br/>Best,<br/>ManageMeals`,
-            })
-          )
+            }),
+          ),
         );
       }
 
       return {};
-    }
+    },
   );
 
   fastify.delete(
@@ -193,7 +193,7 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
               collection: "recipes",
               uuid: r.uuid,
               deletedAt: today,
-            }))
+            })),
           );
         } catch (e) {
           fastify.log.error(e);
@@ -249,7 +249,7 @@ const settings = async (fastify: FastifyInstance, options: Object) => {
         fastify.log.error(e);
         throw new Error("Error deleting user");
       }
-    }
+    },
   );
 };
 

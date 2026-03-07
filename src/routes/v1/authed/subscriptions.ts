@@ -20,7 +20,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
 
     if (request.user?.gcSubscriptionId) {
       fastify.log.error(
-        `User ${request.user?.email} already has a subscription`
+        `User ${request.user?.email} already has a subscription`,
       );
       reply.code(400);
       throw new Error("Error creating subscription, already subscribed");
@@ -31,7 +31,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
       try {
         const mandates = await fastify.gocardless.mandates.list();
         const mandate = mandates.mandates.find(
-          (m: any) => (m.metadata?.useruuid || "") === request.user?.uuid
+          (m: any) => (m.metadata?.useruuid || "") === request.user?.uuid,
         );
         if (!mandate) {
           throw new Error(`No mandate for UUID ${request.user?.uuid} found`);
@@ -70,7 +70,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
             gcSubscriptionId: subscriptionId || "",
             subscriptionType: "PREMIUM",
           },
-        }
+        },
       );
     } catch (e) {
       fastify.log.error(e);
@@ -89,7 +89,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
 
       if (request.user?.gcDdMandateId) {
         fastify.log.error(
-          `User ${request.user.email} already has a GC mandate`
+          `User ${request.user.email} already has a GC mandate`,
         );
         reply.code(400);
         throw new Error("Error creating mandate, already has one");
@@ -127,7 +127,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
       return {
         authorisationUrl,
       };
-    }
+    },
   );
 
   fastify.post("/cancel", async (request, reply) => {
@@ -137,7 +137,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
     ) {
       try {
         await fastify.gocardless.subscriptions.cancel(
-          request.user.gcSubscriptionId
+          request.user.gcSubscriptionId,
         );
       } catch (e) {
         fastify.log.error(e);
@@ -160,7 +160,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
               username: fastify.config.PAYPAL_APP_CLIENT_ID,
               password: fastify.config.PAYPAL_APP_SECRET,
             },
-          }
+          },
         );
         payPalToken = res.data.access_token;
       } catch (e) {
@@ -180,7 +180,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${payPalToken}`,
             },
-          }
+          },
         );
       } catch (e) {
         fastify.log.error(e);
@@ -200,7 +200,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
             subscriptionType: "FREE",
             ppSubscriptionId: undefined,
           },
-        }
+        },
       );
     } catch (e) {
       fastify.log.error(e);
@@ -222,13 +222,13 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
       ) {
         try {
           const subscription: any = await fastify.gocardless.subscriptions.find(
-            request.user.gcSubscriptionId
+            request.user.gcSubscriptionId,
           );
           upcomingPayments = subscription.upcoming_payments.map(
             (payment: any) => ({
               chargeDate: payment.charge_date,
               amount: payment.amount,
-            })
+            }),
           );
         } catch (e) {
           fastify.log.error(e);
@@ -253,7 +253,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
                 username: fastify.config.PAYPAL_APP_CLIENT_ID,
                 password: fastify.config.PAYPAL_APP_SECRET,
               },
-            }
+            },
           );
           payPalToken = res.data.access_token;
         } catch (e) {
@@ -270,7 +270,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${payPalToken}`,
               },
-            }
+            },
           );
           upcomingPayments = [
             {
@@ -284,7 +284,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return upcomingPayments;
-    }
+    },
   );
 
   fastify.post(
@@ -315,7 +315,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
               username: fastify.config.PAYPAL_APP_CLIENT_ID,
               password: fastify.config.PAYPAL_APP_SECRET,
             },
-          }
+          },
         );
         payPalToken = res.data.access_token;
       } catch (e) {
@@ -332,7 +332,7 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${payPalToken}`,
             },
-          }
+          },
         );
         if (!res.data.status || res.data.status !== "ACTIVE") {
           throw new Error("Subscription status is not ACTIVE");
@@ -351,14 +351,14 @@ const subscriptions = async (fastify: FastifyInstance, options: Object) => {
               ppSubscriptionId: subscriptionId || "",
               subscriptionType: "PREMIUM",
             },
-          }
+          },
         );
       } catch (e) {
         fastify.log.error(e);
       }
 
       return {};
-    }
+    },
   );
 };
 

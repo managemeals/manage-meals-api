@@ -60,7 +60,7 @@ const share = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return { slug };
-    }
+    },
   );
 
   fastify.delete(
@@ -96,7 +96,7 @@ const share = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 };
 

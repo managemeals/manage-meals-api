@@ -31,7 +31,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
         {
           createdByUuid: request.user?.uuid,
         },
-        { sort: { slug: 1 } }
+        { sort: { slug: 1 } },
       );
       let categories = [];
       try {
@@ -42,7 +42,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return categories;
-    }
+    },
   );
 
   fastify.post(
@@ -75,7 +75,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return { slug: categorySlug };
-    }
+    },
   );
 
   fastify.get(
@@ -101,7 +101,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return category;
-    }
+    },
   );
 
   fastify.patch(
@@ -112,7 +112,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
         Body: ICategory;
         Params: ISlug;
       }>,
-      reply
+      reply,
     ) => {
       const { slug } = request.params;
       const { name } = request.body;
@@ -128,7 +128,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
               name,
               updatedAt: new Date(),
             },
-          }
+          },
         );
         if (!dbRes.matchedCount) {
           fastify.log.error(`Category ${slug} not found`);
@@ -141,7 +141,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 
   fastify.delete(
@@ -185,7 +185,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
             $pull: {
               categoryUuids: category.uuid,
             },
-          }
+          },
         );
       } catch (e) {
         fastify.log.error(e);
@@ -202,7 +202,7 @@ const categories = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 };
 

@@ -33,7 +33,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
     { schema: { querystring: TMealPlanFilter, response: { 200: TMealPlans } } },
     async (
       request: FastifyRequest<{ Querystring: IMealPlanFilter }>,
-      reply
+      reply,
     ) => {
       const { dates } = request.query;
 
@@ -153,7 +153,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return mealPlans;
-    }
+    },
   );
 
   fastify.post(
@@ -244,7 +244,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
               uuid,
             },
           },
-          { upsert: true }
+          { upsert: true },
         );
       } catch (e) {
         fastify.log.error(e);
@@ -254,7 +254,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       return {
         uuid,
       };
-    }
+    },
   );
 
   fastify.patch(
@@ -262,7 +262,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
     { schema: { params: TUUID, body: TMealPlan } },
     async (
       request: FastifyRequest<{ Params: IUUID; Body: IMealPlan }>,
-      reply
+      reply,
     ) => {
       const { uuid } = request.params;
       const { mealTypes } = request.body;
@@ -350,7 +350,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
 
       const patchedMealTypes = mealPlan.mealTypes.map((mt) => {
         const patchMealType = recipeMealTypes.find(
-          (pmt) => pmt.mealType === mt.mealType
+          (pmt) => pmt.mealType === mt.mealType,
         );
         if (patchMealType) {
           return patchMealType;
@@ -375,7 +375,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
               updatedAt: new Date(),
               mealTypes: patchedMealTypes,
             },
-          }
+          },
         );
       } catch (e) {
         fastify.log.error(e);
@@ -383,7 +383,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 
   fastify.get(
@@ -424,7 +424,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return mealPlans[0];
-    }
+    },
   );
 
   fastify.get(
@@ -533,7 +533,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return mealPlans[0];
-    }
+    },
   );
 
   fastify.delete(
@@ -579,7 +579,7 @@ const mealPlans = async (fastify: FastifyInstance, options: Object) => {
       }
 
       return {};
-    }
+    },
   );
 };
 
