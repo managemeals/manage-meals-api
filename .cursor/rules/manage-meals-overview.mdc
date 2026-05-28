@@ -1,0 +1,26 @@
+---
+description: ManageMeals API monorepo overview, stack, and dev workflow
+alwaysApply: true
+---
+
+# ManageMeals API
+
+Backend for [ManageMeals](https://managemeals.com) — recipe manager. Multi-service repo; each service runs in its own Docker container.
+
+| Service | Directory | Role |
+|---------|-----------|------|
+| API | `src/` | Fastify HTTP API |
+| Queue | `queue/` | RabbitMQ consumer (Node.js) |
+| Scraper | `scraper/` | Python recipe URL scraper |
+| Search sync | `search/` | MongoDB → Typesense sync |
+| Webhooks | `webhooks/` | Cronjob for webhook data in DB |
+
+**Stack:** Node.js ESM + TypeScript, Fastify v5, TypeBox, MongoDB, Redis, Typesense, RabbitMQ, S3, JWT/bcrypt/OAuth, GoCardless/PayPal, SMTP.
+
+**Dev (API):** `npm run dev` (tsx watch) · `npm run build` · `npm start`
+
+**Docker:** use `make` — `make up-infra` / `make stop-infra` / `make clean-infra`; `make up-app` / `make upd-app` / `make stop-app`; `make up-selfhost`. Local overrides: `*.override.yaml`.
+
+**Config:** env vars via `src/plugins/env.ts` (`.env` in non-prod). Never commit secrets. New vars need both `envSchema` in `env.ts` and the `config` block in `custom-types.d.ts`.
+
+**Docs:** `CLAUDE.md` and `README.md` for fuller reference.

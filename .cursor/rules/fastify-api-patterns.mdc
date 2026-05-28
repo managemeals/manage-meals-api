@@ -1,0 +1,52 @@
+---
+description: Fastify route, plugin, TypeBox, and MongoDB patterns for src/
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Fastify API patterns
+
+## Module layout
+
+- **Plugins:** `src/plugins/` — one concern each, wrapped with `fastify-plugin`. Register in `app.ts`; optional plugins only when env is set (e.g. S3, AMQP, GoCardless, OAuth).
+- **Routes:** `src/routes/v1/authed/` (JWT), `unauthed/`, `infra/`, `webhooks/`. Authed routes get `request.user` from the shared preHandler in `authed/index.ts`.
+- **Types/schemas:** shared in `src/types.ts`. Fastify augmentations in `custom-types.d.ts`.
+
+## ESM imports
+
+Use `.js` extensions in TypeScript imports (e.g. `from "./types.js"`).
+
+## Routes
+
+Export `async (fastify, options) => { ... }` per file. Register with a prefix in parent `index.ts`.
+
+Define TypeBox schemas on each route:
+
+```typescript
+fastify.get("/", {
+  schema: { querystring: TRecipeFilter, response: { 200: TPaginated(TRecipes) } },
+}, async (request: FastifyRequest<{ Querystring: IRecipeFilter }>, reply) => { ... });
+```
+
+- `T*` = TypeBox schema const · `I*` = `Static<typeof T*>` · `IDb*` = MongoDB document shape
+- Reuse helpers like `TPaginated()` from `types.ts`
+- Pagination: `ITEMS_PER_PAGE` (default 20), 1-based `page` query param
+
+## MongoDB
+
+```typescript
+const col = fastify.mongo.client.db(fastify.config.MONGO_DB).collection<IDbRecipe>("recipes");
+```
+
+- Scope user data: `createdByUuid: request.user?.uuid`
+- IDs: `uuid: crypto.randomUUID()`; public URLs: `fastify.slugify(title, { maxLength: 89 })` + `nanoid(4)`
+- Track deletes in `deletes` collection where existing routes do
+- On failure: `fastify.log.error(e)`, set `reply.code(4xx)`, `throw new Error("...")`
+
+## Side effects
+
+Publish to RabbitMQ when `fastify.amqp` exists. Uploads: multipart → S3. Search indexing is async via queue/search service — don't call Typesense directly from routes unless an existing pattern does.
+
+## Scope changes
+
+Match neighboring route files. Prefer extending `types.ts` over one-off inline schemas. Admin routes live under `authed/admin/`.

@@ -25,6 +25,7 @@ import {
   TUrl,
 } from "../../../types.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { parseShareRecipeSlug } from "../../../utils/share-url.js";
 
 const recipes = async (fastify: FastifyInstance, options: Object) => {
   const recipesDbCollection = fastify.mongo.client
@@ -364,18 +365,60 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
       }
 
       let recipeJson: IRecipeData;
-      try {
-        const scraperRes = await fastify.axios.get(
-          `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`,
-          {
-            timeout: 60000,
-          },
-        );
-        recipeJson = scraperRes.data as IRecipeData;
-      } catch (e) {
-        fastify.log.error(e);
-        reply.code(400);
-        throw new Error("Error importing recipe, invalid JSON");
+      const shareSlug = parseShareRecipeSlug(url);
+
+      if (shareSlug) {
+        fastify.log.info(`Importing shared recipe: ${shareSlug}`);
+
+        let shareRecipe: IDbShareRecipe | null;
+        try {
+          shareRecipe = await shareRecipesDbCollection.findOne({
+            slug: shareSlug,
+          });
+        } catch (e) {
+          fastify.log.error(e);
+          throw new Error("Error importing shared recipe");
+        }
+
+        if (!shareRecipe) {
+          fastify.log.error(`Share recipe ${shareSlug} not found`);
+          reply.code(404);
+          throw new Error("Shared recipe not found");
+        }
+
+        let recipe: IRecipe | null;
+        try {
+          recipe = await recipesDbCollection.findOne<IRecipe>({
+            uuid: shareRecipe.recipeUuid,
+          });
+        } catch (e) {
+          fastify.log.error(e);
+          throw new Error("Error importing shared recipe");
+        }
+
+        if (!recipe?.data) {
+          fastify.log.error(
+            `Recipe ${shareRecipe.recipeUuid} for share ${shareSlug} not found`,
+          );
+          reply.code(404);
+          throw new Error("Shared recipe not found");
+        }
+
+        recipeJson = recipe.data;
+      } else {
+        try {
+          const scraperRes = await fastify.axios.get(
+            `${fastify.config.RECIPE_SCRAPER_URL}?url=${url}`,
+            {
+              timeout: 60000,
+            },
+          );
+          recipeJson = scraperRes.data as IRecipeData;
+        } catch (e) {
+          fastify.log.error(e);
+          reply.code(400);
+          throw new Error("Error importing recipe, invalid JSON");
+        }
       }
 
       if (

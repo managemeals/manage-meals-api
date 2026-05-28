@@ -1,0 +1,22 @@
+---
+description: Conventions for queue, search, webhooks, and scraper services
+globs: queue/**,search/**,webhooks/**,scraper/**
+alwaysApply: false
+---
+
+# Supporting services
+
+These run separately from the main API (`src/`). Changes here often need coordinated Docker/Makefile updates.
+
+| Service | Lang | Notes |
+|---------|------|-------|
+| `queue/` | Node (JS) | RabbitMQ consumer; own `package.json` |
+| `search/` | Node | Syncs MongoDB → Typesense |
+| `webhooks/` | Node | Cronjob processing webhook payloads stored in DB |
+| `scraper/` | Python | Recipe scraping; API calls via `RECIPE_SCRAPER_URL` |
+
+- Keep service boundaries: API enqueues work or calls scraper HTTP; don't duplicate business logic in consumers unless already done there.
+- Use the same env/config patterns as sibling files in that service directory.
+- Test with `make up-infra` (or full app) so Mongo, Redis, RabbitMQ, and Typesense are available.
+
+When adding a new background capability, decide: HTTP in API, queue message, cron in `webhooks/`, or dedicated container — follow the closest existing service.
