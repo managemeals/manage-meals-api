@@ -29,6 +29,11 @@ import {
 } from "../../../types.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import {
+  getRecipeImportFailureMessage,
+  isImportableRecipeData,
+  RECIPE_IMPORT_UNSUPPORTED_MESSAGE,
+} from "../../../utils/recipe-import.js";
+import {
   importHostFromRecipeData,
   mongoCanonicalKeyExpr,
   mongoImportHostExpr,
@@ -513,7 +518,7 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         } catch (e) {
           fastify.log.error(e);
           reply.code(400);
-          throw new Error("Error importing recipe, invalid JSON");
+          throw new Error(getRecipeImportFailureMessage(e));
         }
 
         const normalizedCanonical = normalizeCanonicalUrl(
@@ -530,17 +535,10 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         }
       }
 
-      if (
-        !recipeJson ||
-        !Object.keys(recipeJson).length ||
-        (!recipeJson.instructions &&
-          (!recipeJson.instructions_list ||
-            !recipeJson.instructions_list.length) &&
-          (!recipeJson.ingredients || !recipeJson.ingredients.length))
-      ) {
-        fastify.log.error("Recipe JSON empty");
+      if (!isImportableRecipeData(recipeJson)) {
+        fastify.log.error("Recipe JSON empty or missing recipe fields");
         reply.code(400);
-        throw new Error("Error importing recipe, invalid JSON");
+        throw new Error(RECIPE_IMPORT_UNSUPPORTED_MESSAGE);
       }
 
       const recipeUuid = crypto.randomUUID();
