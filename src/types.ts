@@ -498,3 +498,12 @@ export const TPopularRecipe = Type.Object({
 export const TPopularRecipes = Type.Array(TPopularRecipe);
 
 export type IPopularRecipe = Static<typeof TPopularRecipe>;
+
+export const TImportHostStat = Type.Object({
+  host: Type.String(),
+  count: Type.Number(),
+});
+
+export const TImportHostStats = Type.Array(TImportHostStat);
+
+export type IImportHostStat = Static<typeof TImportHostStat>;

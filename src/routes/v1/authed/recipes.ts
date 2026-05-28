@@ -6,6 +6,7 @@ import {
   IDbDeletes,
   IDbRecipe,
   IDbShareRecipe,
+  IImportHostStat,
   ILimitFilter,
   IPopularRecipe,
   IRecipe,
@@ -14,8 +15,10 @@ import {
   ISlug,
   IUrl,
   TCategoriesTags,
+  TImportHostStats,
   TLimitFilter,
   TPaginated,
+  TPopularRecipe,
   TPopularRecipes,
   TRecipe,
   TRecipeFilter,
@@ -25,7 +28,100 @@ import {
   TUrl,
 } from "../../../types.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  importHostFromRecipeData,
+  mongoCanonicalKeyExpr,
+  mongoImportHostExpr,
+  normalizeCanonicalUrl,
+} from "../../../utils/recipe-import-url.js";
 import { parseShareRecipeSlug } from "../../../utils/share-url.js";
+import { subDays } from "date-fns";
+import { Collection } from "mongodb";
+
+const TRENDING_DAYS = 30;
+
+function buildGroupedImportPipeline({
+  limit = 20,
+  since,
+}: {
+  limit?: number;
+  since?: Date;
+}) {
+  const matchStage: Record<string, unknown> = {
+    "data.canonical_url": { $exists: true, $ne: "" },
+  };
+  if (since) {
+    matchStage.createdAt = { $gte: since };
+  }
+
+  return [
+    { $match: matchStage },
+    { $addFields: { canonicalKey: mongoCanonicalKeyExpr } },
+    { $match: { canonicalKey: { $ne: null } } },
+    { $sort: { updatedAt: -1 } },
+    {
+      $group: {
+        _id: "$canonicalKey",
+        count: { $sum: 1 },
+        recipe: { $first: "$$ROOT" },
+      },
+    },
+    { $match: { count: { $gt: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: limit },
+    {
+      $project: {
+        _id: 0,
+        url: "$_id",
+        count: 1,
+        recipe: 1,
+      },
+    },
+  ];
+}
+
+function buildCanonicalCountPipeline(canonicalKey: string, since?: Date) {
+  const matchStage: Record<string, unknown> = {
+    "data.canonical_url": { $exists: true, $ne: "" },
+  };
+  if (since) {
+    matchStage.createdAt = { $gte: since };
+  }
+
+  return [
+    { $match: matchStage },
+    { $addFields: { canonicalKey: mongoCanonicalKeyExpr } },
+    { $match: { canonicalKey } },
+    { $count: "count" },
+  ];
+}
+
+async function getGroupedImports(
+  collection: Collection<IDbRecipe>,
+  options: { limit?: number; since?: Date },
+): Promise<IPopularRecipe[]> {
+  const recipes: IPopularRecipe[] = [];
+  const cursor = collection.aggregate(buildGroupedImportPipeline(options));
+  for await (const doc of cursor) {
+    recipes.push(doc as IPopularRecipe);
+  }
+  return recipes;
+}
+
+async function getCanonicalImportCount(
+  collection: Collection<IDbRecipe>,
+  canonicalKey: string,
+  since?: Date,
+): Promise<number> {
+  let count = 1;
+  const cursor = collection.aggregate(
+    buildCanonicalCountPipeline(canonicalKey, since),
+  );
+  for await (const doc of cursor) {
+    count = doc.count;
+  }
+  return count;
+}
 
 const recipes = async (fastify: FastifyInstance, options: Object) => {
   const recipesDbCollection = fastify.mongo.client
@@ -419,6 +515,19 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
           reply.code(400);
           throw new Error("Error importing recipe, invalid JSON");
         }
+
+        const normalizedCanonical = normalizeCanonicalUrl(
+          recipeJson.canonical_url || url,
+        );
+        if (normalizedCanonical) {
+          recipeJson.canonical_url = normalizedCanonical;
+        }
+        if (!recipeJson.host) {
+          const host = importHostFromRecipeData(recipeJson);
+          if (host) {
+            recipeJson.host = host;
+          }
+        }
       }
 
       if (
@@ -479,95 +588,205 @@ const recipes = async (fastify: FastifyInstance, options: Object) => {
         response: { 200: TPopularRecipes },
       },
     },
-    async (request: FastifyRequest<{ Querystring: ILimitFilter }>, reply) => {
+    async (request: FastifyRequest<{ Querystring: ILimitFilter }>) => {
       const { limit } = request.query;
 
-      const pipeline = [
-        {
-          $group: {
-            _id: "$data.canonical_url",
-            count: {
-              $sum: 1,
-            },
-            recipe: { $first: "$$ROOT" },
-          },
-        },
-        {
-          $match: {
-            "recipe.data.canonical_url": {
-              $exists: true,
-              $ne: "",
-            },
-            count: {
-              $gt: 1,
-            },
-          },
-        },
-        {
-          $sort: {
-            count: -1,
-          },
-        },
-        {
-          $limit: limit || 10,
-        },
-        {
-          $project: {
-            _id: 0,
-            url: "$_id",
-            count: 1,
-            recipe: 1,
-          },
-        },
-      ];
-
-      let recipes: IPopularRecipe[] = [];
-      const cursor = recipesDbCollection.aggregate(pipeline);
       try {
-        for await (const doc of cursor) {
-          recipes.push(doc as IPopularRecipe);
-        }
+        return await getGroupedImports(recipesDbCollection, {
+          limit: limit || 20,
+        });
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error getting popular recipes");
       }
+    },
+  );
 
-      return recipes;
+  fastify.get(
+    "/trending",
+    {
+      schema: {
+        querystring: TLimitFilter,
+        response: { 200: TPopularRecipes },
+      },
+    },
+    async (request: FastifyRequest<{ Querystring: ILimitFilter }>) => {
+      const { limit } = request.query;
+      const since = subDays(new Date(), TRENDING_DAYS);
+
+      try {
+        return await getGroupedImports(recipesDbCollection, {
+          limit: limit || 20,
+          since,
+        });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting trending recipes");
+      }
     },
   );
 
   fastify.get(
     "/popular/:slug",
-    { schema: { params: TSlug, response: { 200: TRecipe } } },
+    {
+      schema: {
+        params: TSlug,
+        response: { 200: TPopularRecipe },
+      },
+    },
     async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
       const { slug } = request.params;
 
-      const pipeline = [
-        {
-          $match: {
-            slug,
-          },
-        },
-      ];
-
-      let recipes: IRecipe[] = [];
-      const cursor = recipesDbCollection.aggregate(pipeline);
+      let recipe: IRecipe | null;
       try {
-        for await (const doc of cursor) {
-          recipes.push(doc as IRecipe);
-        }
+        recipe = await recipesDbCollection.findOne<IRecipe>({ slug });
       } catch (e) {
         fastify.log.error(e);
         throw new Error("Error getting popular recipe");
       }
 
-      if (!recipes.length) {
+      if (!recipe?.data?.canonical_url) {
         fastify.log.error(`Recipe ${slug} not found`);
         reply.code(404);
         throw new Error("Error getting popular recipe");
       }
 
-      return recipes[0];
+      const canonicalKey = normalizeCanonicalUrl(recipe.data.canonical_url);
+      if (!canonicalKey) {
+        reply.code(404);
+        throw new Error("Error getting popular recipe");
+      }
+
+      let count: number;
+      try {
+        count = await getCanonicalImportCount(
+          recipesDbCollection,
+          canonicalKey,
+        );
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting popular recipe");
+      }
+
+      return {
+        url: canonicalKey,
+        count,
+        recipe,
+      };
+    },
+  );
+
+  fastify.get(
+    "/trending/:slug",
+    {
+      schema: {
+        params: TSlug,
+        response: { 200: TPopularRecipe },
+      },
+    },
+    async (request: FastifyRequest<{ Params: ISlug }>, reply) => {
+      const { slug } = request.params;
+      const since = subDays(new Date(), TRENDING_DAYS);
+
+      let recipe: IRecipe | null;
+      try {
+        recipe = await recipesDbCollection.findOne<IRecipe>({ slug });
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting trending recipe");
+      }
+
+      if (!recipe?.data?.canonical_url) {
+        fastify.log.error(`Recipe ${slug} not found`);
+        reply.code(404);
+        throw new Error("Error getting trending recipe");
+      }
+
+      const canonicalKey = normalizeCanonicalUrl(recipe.data.canonical_url);
+      if (!canonicalKey) {
+        reply.code(404);
+        throw new Error("Error getting trending recipe");
+      }
+
+      let count: number;
+      try {
+        count = await getCanonicalImportCount(
+          recipesDbCollection,
+          canonicalKey,
+          since,
+        );
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting trending recipe");
+      }
+
+      return {
+        url: canonicalKey,
+        count,
+        recipe,
+      };
+    },
+  );
+
+  fastify.get(
+    "/charts/import-hosts",
+    {
+      schema: {
+        querystring: TLimitFilter,
+        response: { 200: TImportHostStats },
+      },
+    },
+    async (request: FastifyRequest<{ Querystring: ILimitFilter }>) => {
+      const { limit } = request.query;
+
+      const pipeline = [
+        {
+          $match: {
+            $or: [
+              { "data.canonical_url": { $exists: true, $ne: "" } },
+              { "data.host": { $exists: true, $ne: "" } },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            importHost: mongoImportHostExpr,
+          },
+        },
+        {
+          $match: {
+            importHost: { $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: "$importHost",
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: limit || 20 },
+        {
+          $project: {
+            _id: 0,
+            host: "$_id",
+            count: 1,
+          },
+        },
+      ];
+
+      const hosts: IImportHostStat[] = [];
+      const cursor = recipesDbCollection.aggregate(pipeline);
+      try {
+        for await (const doc of cursor) {
+          hosts.push(doc as IImportHostStat);
+        }
+      } catch (e) {
+        fastify.log.error(e);
+        throw new Error("Error getting import host chart");
+      }
+
+      return hosts;
     },
   );
 
