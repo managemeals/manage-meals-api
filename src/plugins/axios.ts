@@ -7,7 +7,7 @@ const fastifyAxios = fastifyPlugin(
     const client = axiosLib.create(options);
 
     fastify.decorate("axios", client);
-  }
+  },
 );
 
 export { fastifyAxios };

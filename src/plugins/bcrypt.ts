@@ -17,7 +17,7 @@ const fastifyBcrypt = fastifyPlugin(
       hash,
       compare,
     });
-  }
+  },
 );
 
 export { fastifyBcrypt };
