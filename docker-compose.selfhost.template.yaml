@@ -1,0 +1,142 @@
+services:
+  manage-meals-web:
+    cap_drop: [ALL]
+    depends_on: [manage-meals-api]
+    image: ghcr.io/managemeals/manage-meals-web:latest@sha256:e5a7c222906f8648225a3b2f2ab364d50886255b12bb9180aa888333dea54725
+    ports: [3001:3000]
+    read_only: true
+    restart: unless-stopped
+    environment:
+      API_URL: http://manage-meals-api:3000/v1
+      BODY_SIZE_LIMIT: Infinity
+      COOKIE_ACCESS_TOKEN_EXPIRE_SEC: 600
+      COOKIE_ACCESS_TOKEN: mmeals_access_token
+      COOKIE_REFRESH_TOKEN_EXPIRE_SEC: 2629746
+      COOKIE_REFRESH_TOKEN: mmeals_refresh_token
+      ORIGIN: http://localhost:3001
+      PASSWORD_MIN_LENGTH: 6
+      PUBLIC_MAIN_TITLE: ManageMeals
+    networks:
+      - manage-meals-web-to-manage-meals-api-network
+      - manage-meals-web-to-outside-network
+
+  manage-meals-api:
+    cap_drop: [ALL]
+    image: ghcr.io/managemeals/manage-meals-api:latest@sha256:5322803d2bbb81ad5b88cce3c49fca48d9dc2dd331e5ec5aeed401b3e434b7fa
+    read_only: true
+    restart: unless-stopped
+    environment:
+      ACCESS_JWT_SECRET: todo
+      AUTH_ACCESS_TOKEN_EXPIRE_SEC: 600
+      AUTH_REFRESH_TOKEN_EXPIRE_SEC: 2629746
+      MONGO_DB: manage_meals
+      MONGO_URL: todo
+      RECIPE_SCRAPER_URL: http://recipe-scraper:8000
+      REDIS_URL: redis://valkey:6379
+      REFRESH_JWT_SECRET: todo
+      TYPESENSE_API_KEY: todo
+      TYPESENSE_HOST: typesense
+      TYPESENSE_PORT: 8108
+      USER_REGISTER_ENABLED: "true"
+    networks:
+      - manage-meals-api-to-mongo-network
+      - manage-meals-api-to-recipe-scraper-network
+      - manage-meals-api-to-search-sync-network
+      - manage-meals-api-to-typesense-network
+      - manage-meals-api-to-valkey-network
+      - manage-meals-web-to-manage-meals-api-network
+    depends_on:
+      - mongo
+      - recipe-scraper
+      - search-sync
+      - typesense
+      - valkey
+
+  valkey:
+    cap_drop: [ALL]
+    image: valkey/valkey:8.1.5@sha256:e817820fe9786391a29edb2fc436e2506b5df769299a9547bffeb83518df6c66
+    networks: [manage-meals-api-to-valkey-network]
+    read_only: true
+    restart: unless-stopped
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+  recipe-scraper:
+    cap_drop: [ALL]
+    image: ghcr.io/managemeals/manage-meals-scraper:latest@sha256:e0a7ff1407d790c8d7e66441cd4dbdb69b05ac4ed2103578a59d00b454f9bad4
+    read_only: true
+    restart: unless-stopped
+    networks:
+      - manage-meals-api-to-recipe-scraper-network
+      - recipe-scraper-to-outside-network
+
+  typesense:
+    cap_drop: [ALL]
+    command: "--data-dir /data --api-key=todo --enable-cors"
+    image: typesense/typesense:28.0@sha256:6955c02616216b3464880b5324e4ca4f0a43ac228d1494ba33e8b79cc6d79ad3
+    read_only: true
+    restart: unless-stopped
+    volumes: [typesense-data:/data]
+    networks:
+      - manage-meals-api-to-typesense-network
+      - search-sync-to-typesense-network
+
+  search-sync:
+    cap_drop: [ALL]
+    image: ghcr.io/managemeals/manage-meals-search-sync:latest@sha256:79352d2f7f67ad46522f515dd9b142b406e884b5f8078e501f2ba79535fa567d
+    read_only: true
+    restart: unless-stopped
+    environment:
+      MONGO_DB: manage_meals
+      MONGO_URL: todo
+      TYPESENSE_API_KEY: todo
+      TYPESENSE_HOST: typesense
+      TYPESENSE_PORT: 8108
+    networks:
+      - manage-meals-api-to-search-sync-network
+      - search-sync-to-mongo-network
+      - search-sync-to-typesense-network
+    depends_on:
+      - mongo
+      - typesense
+
+  mongo:
+    cap_drop: [ALL]
+    image: mongo:7.0.28@sha256:32b5cbf6e1075ad0f5eb2b880ee61e985d5135519a7a34a7d81712af37f27913
+    read_only: true
+    restart: unless-stopped
+    volumes: [mongo-data:/data/db]
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    environment:
+      MONGO_INITDB_DATABASE: manage_meals
+      MONGO_INITDB_ROOT_PASSWORD: todo
+      MONGO_INITDB_ROOT_USERNAME: todo
+    networks:
+      - search-sync-to-mongo-network
+      - manage-meals-api-to-mongo-network
+
+volumes:
+  mongo-data:
+  typesense-data:
+
+networks:
+  default:
+  manage-meals-web-to-outside-network: { internal: false, attachable: false }
+  recipe-scraper-to-outside-network: { internal: false, attachable: false }
+  manage-meals-api-to-mongo-network: { internal: true, attachable: false }
+  manage-meals-api-to-recipe-scraper-network:
+    { internal: true, attachable: false }
+  manage-meals-api-to-search-sync-network: { internal: true, attachable: false }
+  manage-meals-api-to-typesense-network: { internal: true, attachable: false }
+  manage-meals-api-to-valkey-network: { internal: true, attachable: false }
+  manage-meals-web-to-manage-meals-api-network:
+    { internal: true, attachable: false }
+  search-sync-to-mongo-network: { internal: true, attachable: false }
+  search-sync-to-typesense-network: { internal: true, attachable: false }
