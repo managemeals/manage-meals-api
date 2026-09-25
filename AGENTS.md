@@ -136,6 +136,8 @@ All config is via environment variables, loaded through `src/plugins/env.ts`. In
 
 Infra endpoints use `INFRA_ENDPOINT_KEY` for basic auth.
 
+New env vars need both an entry in `envSchema` in `env.ts` and the `config` block in `custom-types.d.ts`. Never commit secrets.
+
 ## Patterns & Conventions
 
 - TypeBox schemas are defined inline with route handlers for request/response validation
@@ -144,3 +146,71 @@ Infra endpoints use `INFRA_ENDPOINT_KEY` for basic auth.
 - Pagination uses `ITEMS_PER_PAGE` (default 20)
 - File uploads go through `@fastify/multipart` then to S3; `MAX_FILE_SIZE_BYTES` defaults to 10 MB
 - Health check: `GET /infra/health` (excluded from request logging)
+
+## Fastify API patterns (applies to `src/**/*.ts`)
+
+### Module layout
+
+- **Plugins:** `src/plugins/` — one concern each, wrapped with `fastify-plugin`. Register in `app.ts`; optional plugins only when env is set (e.g. S3, AMQP, GoCardless, OAuth).
+- **Routes:** `src/routes/v1/authed/` (JWT), `unauthed/`, `infra/`, `webhooks/`. Authed routes get `request.user` from the shared preHandler in `authed/index.ts`.
+- **Types/schemas:** shared in `src/types.ts`. Fastify augmentations in `custom-types.d.ts`.
+
+### ESM imports
+
+Use `.js` extensions in TypeScript imports (e.g. `from "./types.js"`).
+
+### Routes
+
+Export `async (fastify, options) => { ... }` per file. Register with a prefix in parent `index.ts`.
+
+Define TypeBox schemas on each route:
+
+```typescript
+fastify.get("/", {
+  schema: { querystring: TRecipeFilter, response: { 200: TPaginated(TRecipes) } },
+}, async (request: FastifyRequest<{ Querystring: IRecipeFilter }>, reply) => { ... });
+```
+
+- `T*` = TypeBox schema const · `I*` = `Static<typeof T*>` · `IDb*` = MongoDB document shape
+- Reuse helpers like `TPaginated()` from `types.ts`
+- Pagination: `ITEMS_PER_PAGE` (default 20), 1-based `page` query param
+
+### MongoDB
+
+```typescript
+const col = fastify.mongo.client.db(fastify.config.MONGO_DB).collection<IDbRecipe>("recipes");
+```
+
+- Scope user data: `createdByUuid: request.user?.uuid`
+- IDs: `uuid: crypto.randomUUID()`; public URLs: `fastify.slugify(title, { maxLength: 89 })` + `nanoid(4)`
+- Track deletes in `deletes` collection where existing routes do
+- On failure: `fastify.log.error(e)`, set `reply.code(4xx)`, `throw new Error("...")`
+
+### Side effects
+
+Publish to RabbitMQ when `fastify.amqp` exists. Uploads: multipart → S3. Search indexing is async via queue/search service — don't call Typesense directly from routes unless an existing pattern does.
+
+### Scope changes
+
+Match neighboring route files. Prefer extending `types.ts` over one-off inline schemas. Admin routes live under `authed/admin/`.
+
+## Supporting services (applies to `queue/**`, `search/**`, `webhooks/**`, `scraper/**`)
+
+These run separately from the main API (`src/`). Changes here often need coordinated Docker/Makefile updates.
+
+| Service | Lang | Notes |
+|---------|------|-------|
+| `queue/` | Node (JS) | RabbitMQ consumer; own `package.json` |
+| `search/` | Node | Syncs MongoDB → Typesense |
+| `webhooks/` | Node | Cronjob processing webhook payloads stored in DB |
+| `scraper/` | Python | Recipe scraping; API calls via `RECIPE_SCRAPER_URL` |
+
+- Keep service boundaries: API enqueues work or calls scraper HTTP; don't duplicate business logic in consumers unless already done there.
+- Use the same env/config patterns as sibling files in that service directory.
+- Test with `make up-infra` (or full app) so Mongo, Redis, RabbitMQ, and Typesense are available.
+
+When adding a new background capability, decide: HTTP in API, queue message, cron in `webhooks/`, or dedicated container — follow the closest existing service.
+
+## Docs
+
+See `README.md` for fuller reference.
