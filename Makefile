@@ -5,35 +5,35 @@ default:
 # infra only
 .PHONY: build-infra
 build-infra:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.infra.override.yaml \
 	build
 
 .PHONY: up-infra
 up-infra:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.infra.override.yaml \
 	up
 
 .PHONY: stop-infra
 stop-infra:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.infra.override.yaml \
 	stop
 
 .PHONY: clean-infra
 clean-infra:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.infra.override.yaml \
 	down -v
 
 .PHONY: pull-infra
 pull-infra:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.infra.override.yaml \
 	pull
@@ -47,7 +47,7 @@ recreate-infra: clean-infra build-infra up-infra
 # infra and app
 .PHONY: build-app
 build-app:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.app.yaml \
 	-f docker-compose.infra.override.yaml \
@@ -56,7 +56,7 @@ build-app:
 
 .PHONY: up-app
 up-app:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.app.yaml \
 	-f docker-compose.infra.override.yaml \
@@ -65,7 +65,7 @@ up-app:
 
 .PHONY: upd-app
 upd-app:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.app.yaml \
 	-f docker-compose.infra.override.yaml \
@@ -74,7 +74,7 @@ upd-app:
 
 .PHONY: stop-app
 stop-app:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.app.yaml \
 	-f docker-compose.infra.override.yaml \
@@ -83,7 +83,7 @@ stop-app:
 
 .PHONY: clean-app
 clean-app:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.app.yaml \
 	-f docker-compose.infra.override.yaml \
@@ -92,7 +92,7 @@ clean-app:
 
 .PHONY: pull-app
 pull-app:
-	docker compose \
+	podman compose \
 	-f docker-compose.infra.yaml \
 	-f docker-compose.app.yaml \
 	-f docker-compose.infra.override.yaml \
@@ -111,42 +111,42 @@ recreate-app: clean-app build-app up-app
 # self hosted
 .PHONY: build-selfhost
 build-selfhost:
-	docker compose \
+	podman compose \
 	-f docker-compose.selfhost.yaml \
 	-f docker-compose.selfhost.override.yaml \
 	build
 
 .PHONY: up-selfhost
 up-selfhost:
-	docker compose \
+	podman compose \
 	-f docker-compose.selfhost.yaml \
 	-f docker-compose.selfhost.override.yaml \
 	up
 
 .PHONY: upd-selfhost
 upd-selfhost:
-	docker compose \
+	podman compose \
 	-f docker-compose.selfhost.yaml \
 	-f docker-compose.selfhost.override.yaml \
 	up -d
 
 .PHONY: stop-selfhost
 stop-selfhost:
-	docker compose \
+	podman compose \
 	-f docker-compose.selfhost.yaml \
 	-f docker-compose.selfhost.override.yaml \
 	stop
 
 .PHONY: clean-selfhost
 clean-selfhost:
-	docker compose \
+	podman compose \
 	-f docker-compose.selfhost.yaml \
 	-f docker-compose.selfhost.override.yaml \
 	down -v
 
 .PHONY: pull-selfhost
 pull-selfhost:
-	docker compose \
+	podman compose \
 	-f docker-compose.selfhost.yaml \
 	-f docker-compose.selfhost.override.yaml \
 	pull
